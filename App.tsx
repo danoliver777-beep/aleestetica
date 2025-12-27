@@ -66,7 +66,7 @@ const AppContent: React.FC = () => {
     switch (currentScreen) {
       case 'HOME':
         return <ClientHomeScreen
-          onNavigate={setCurrentScreen}
+          onNavigate={handleNavigate}
           onSelectService={(s) => {
             setSelectedService(s);
             setCurrentScreen('BOOKING');

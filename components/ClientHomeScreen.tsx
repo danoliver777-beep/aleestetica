@@ -4,7 +4,7 @@ import { Screen } from '../types';
 import BottomNav from './BottomNav';
 import Header from './Header';
 import { useAuth } from '../context/AuthContext';
-import { getPets, getServices, getProfile, getAppointments, Pet, Service, Profile, Appointment } from '../lib/database';
+import { getPets, getServices, getProfile, getAppointments, Pet, Service, Profile } from '../lib/database';
 
 interface Notification {
   id: string;
@@ -16,7 +16,7 @@ interface Notification {
 }
 
 interface ClientHomeProps {
-  onNavigate: (s: Screen) => void;
+  onNavigate: (s: Screen, pet?: Pet) => void;
   onSelectService: (s: any) => void;
 }
 
@@ -151,17 +151,7 @@ const ClientHomeScreen: React.FC<ClientHomeProps> = ({ onNavigate, onSelectServi
           </div>
         }
         onRightClick={() => setShowNotifications(true)}
-      >
-        <div className="flex w-full items-stretch rounded-xl h-12 bg-gray-100 dark:bg-gray-800 shadow-sm overflow-hidden">
-          <div className="flex items-center justify-center pl-4 text-gray-400">
-            <span className="material-symbols-outlined">search</span>
-          </div>
-          <input
-            className="w-full bg-transparent border-none focus:ring-0 text-sm"
-            placeholder="Buscar serviços (ex: Banho, Tosa)..."
-          />
-        </div>
-      </Header>
+      />
 
       <main>
         {/* Pets Section */}
@@ -169,7 +159,11 @@ const ClientHomeScreen: React.FC<ClientHomeProps> = ({ onNavigate, onSelectServi
           <h2 className="text-[20px] font-bold px-4 mb-4">Para seu Pet</h2>
           <div className="flex w-full overflow-x-auto px-4 gap-4 no-scrollbar">
             {pets.map(pet => (
-              <div key={pet.id} className="flex flex-col items-center gap-2 min-w-[80px] cursor-pointer group">
+              <div
+                key={pet.id}
+                className="flex flex-col items-center gap-2 min-w-[80px] cursor-pointer group"
+                onClick={() => onNavigate('PET_REGISTRATION', pet)}
+              >
                 <div className="p-[2px] rounded-full bg-gradient-to-tr from-primary to-blue-300">
                   <div className="bg-white dark:bg-[#1A202C] p-[2px] rounded-full">
                     {pet.image_url ? (
@@ -328,16 +322,16 @@ const ClientHomeScreen: React.FC<ClientHomeProps> = ({ onNavigate, onSelectServi
                     key={notification.id}
                     onClick={() => setNotifications(prev => prev.map(n => n.id === notification.id ? { ...n, read: true } : n))}
                     className={`p-4 rounded-xl border cursor-pointer transition-all hover:shadow-md ${notification.read
-                        ? 'bg-gray-50 dark:bg-gray-800/50 border-gray-100 dark:border-gray-700'
-                        : 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800'
+                      ? 'bg-gray-50 dark:bg-gray-800/50 border-gray-100 dark:border-gray-700'
+                      : 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800'
                       }`}
                   >
                     <div className="flex gap-3">
                       {/* Icon based on notification type */}
                       <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${notification.type === 'appointment' ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-600' :
-                          notification.type === 'promo' ? 'bg-green-100 dark:bg-green-900/50 text-green-600' :
-                            notification.type === 'reminder' ? 'bg-orange-100 dark:bg-orange-900/50 text-orange-600' :
-                              'bg-purple-100 dark:bg-purple-900/50 text-purple-600'
+                        notification.type === 'promo' ? 'bg-green-100 dark:bg-green-900/50 text-green-600' :
+                          notification.type === 'reminder' ? 'bg-orange-100 dark:bg-orange-900/50 text-orange-600' :
+                            'bg-purple-100 dark:bg-purple-900/50 text-purple-600'
                         }`}>
                         <span className="material-symbols-outlined text-xl">
                           {notification.type === 'appointment' ? 'calendar_month' :
