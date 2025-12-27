@@ -14,6 +14,7 @@ const AdminDashboardScreen: React.FC<AdminDashboardProps> = ({ onNavigate }) => 
   const { user, signOut } = useAuth();
   const [stats, setStats] = useState({ todayCount: 0, pendingCount: 0, todayRevenue: 0 });
   const [upcomingAppointments, setUpcomingAppointments] = useState<AppointmentWithDetails[]>([]);
+  const [selectedAppointment, setSelectedAppointment] = useState<AppointmentWithDetails | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -146,7 +147,11 @@ const AdminDashboardScreen: React.FC<AdminDashboardProps> = ({ onNavigate }) => 
               </div>
             ) : (
               upcomingAppointments.map(app => (
-                <div key={app.id} className="group relative flex items-center gap-4 rounded-xl p-3 transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                <div
+                  key={app.id}
+                  onClick={() => setSelectedAppointment(app)}
+                  className="group relative flex items-center gap-4 rounded-xl p-3 transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer"
+                >
                   <div className="relative shrink-0">
                     <div className="h-14 w-14 rounded-xl bg-gray-200 flex items-center justify-center overflow-hidden">
                       {app.pet?.image_url ? (
@@ -178,6 +183,104 @@ const AdminDashboardScreen: React.FC<AdminDashboardProps> = ({ onNavigate }) => 
       </main>
 
       <AdminBottomNav active="ADMIN_DASHBOARD" onNavigate={onNavigate} />
+
+      {/* Appointment Details Modal */}
+      {selectedAppointment && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-surface-dark w-full max-w-sm rounded-3xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
+            {/* Modal Header with Pet Image */}
+            <div className="relative h-48 bg-gray-200">
+              {selectedAppointment.pet?.image_url ? (
+                <div
+                  className="w-full h-full bg-cover bg-center"
+                  style={{ backgroundImage: `url("${selectedAppointment.pet.image_url}")` }}
+                ></div>
+              ) : (
+                <div className="w-full h-full flex items-center justify-center bg-gray-100 text-gray-400">
+                  <span className="material-symbols-outlined text-6xl">pets</span>
+                </div>
+              )}
+              <button
+                onClick={() => setSelectedAppointment(null)}
+                className="absolute top-4 right-4 h-8 w-8 rounded-full bg-black/30 backdrop-blur-md flex items-center justify-center text-white hover:bg-black/50 transition-colors"
+              >
+                <span className="material-symbols-outlined text-sm">close</span>
+              </button>
+              <div className="absolute bottom-0 inset-x-0 h-24 bg-gradient-to-t from-black/60 to-transparent flex items-end p-6">
+                <div>
+                  <h3 className="text-white text-2xl font-bold leading-none mb-1">{selectedAppointment.pet?.name || 'Pet'}</h3>
+                  <p className="text-white/90 text-sm font-medium">{selectedAppointment.pet?.breed || 'Raça não informada'}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6 space-y-6">
+              {/* Service Info */}
+              <div className="flex items-start gap-4">
+                <div className="h-10 w-10 shrink-0 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                  <span className="material-symbols-outlined">cut</span>
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-gray-900 dark:text-gray-100">Serviço</h4>
+                  <p className="text-gray-600 dark:text-gray-400 text-sm">{selectedAppointment.service?.name}</p>
+                  <p className="text-primary font-bold text-sm mt-0.5">R$ {selectedAppointment.service?.price?.toFixed(2)}</p>
+                </div>
+              </div>
+
+              {/* Date & Time */}
+              <div className="flex items-start gap-4">
+                <div className="h-10 w-10 shrink-0 rounded-full bg-orange-500/10 flex items-center justify-center text-orange-500">
+                  <span className="material-symbols-outlined">event</span>
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-gray-900 dark:text-gray-100">Data e Hora</h4>
+                  <p className="text-gray-600 dark:text-gray-400 text-sm capitalize">
+                    {new Date(selectedAppointment.scheduled_date + 'T00:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
+                  </p>
+                  <p className="text-gray-600 dark:text-gray-400 text-sm mt-0.5">
+                    às {selectedAppointment.scheduled_time.substring(0, 5)}
+                  </p>
+                </div>
+              </div>
+
+              {/* Client Info */}
+              <div className="flex items-start gap-4">
+                <div className="h-10 w-10 shrink-0 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-500">
+                  <span className="material-symbols-outlined">person</span>
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-gray-900 dark:text-gray-100">Tutor</h4>
+                  <p className="text-gray-600 dark:text-gray-400 text-sm">{selectedAppointment.profile?.full_name || 'Desconhecido'}</p>
+                  <div className="mt-1.5 flex items-start gap-1.5 p-2 rounded-lg bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-800">
+                    <span className="material-symbols-outlined text-gray-400 text-sm mt-0.5">location_on</span>
+                    <div className="flex-1">
+                      <p className="text-xs font-medium text-gray-900 dark:text-white">
+                        {selectedAppointment.profile?.address || 'Endereço não cadastrado'}
+                      </p>
+                      {selectedAppointment.profile?.neighborhood && (
+                        <p className="text-[10px] text-gray-500">{selectedAppointment.profile.neighborhood}</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <button
+                onClick={() => {
+                  setSelectedAppointment(null);
+                  onNavigate('ADMIN_AGENDA');
+                }}
+                className="w-full h-12 rounded-xl bg-gray-900 text-white font-bold text-sm flex items-center justify-center gap-2 hover:bg-gray-800 active:scale-95 transition-all"
+              >
+                <span>Ver na Agenda</span>
+                <span className="material-symbols-outlined text-lg">arrow_forward</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
