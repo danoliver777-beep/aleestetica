@@ -10,6 +10,8 @@ export interface Profile {
     avatar_url: string | null;
     role: string;
     created_at: string;
+    address?: string | null;
+    neighborhood?: string | null;
 }
 
 export const getProfile = async (userId: string): Promise<Profile | null> => {

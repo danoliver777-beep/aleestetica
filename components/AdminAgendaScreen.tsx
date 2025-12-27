@@ -211,7 +211,10 @@ const AdminAgendaScreen: React.FC<AdminAgendaProps> = ({ onNavigate }) => {
                         <h3 className="font-bold text-lg">{app.pet?.name || 'Pet'}</h3>
                         <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-wide text-slate-500">{app.pet?.breed || ''}</span>
                       </div>
-                      <p className="text-xs text-slate-500">Cliente: {app.profile?.full_name || 'Não informado'}</p>
+                      <p className="text-xs text-slate-500">
+                        Cliente: {app.profile?.full_name || 'Não informado'}
+                        {app.profile?.neighborhood && <span className="text-primary font-medium ml-1">({app.profile.neighborhood})</span>}
+                      </p>
                       <div className="mt-1 flex items-center gap-1 text-xs font-medium text-primary">
                         <span className="material-symbols-outlined text-[14px]">access_time</span>
                         {app.scheduled_time.substring(0, 5)}
@@ -288,7 +291,7 @@ const AdminAgendaScreen: React.FC<AdminAgendaProps> = ({ onNavigate }) => {
       </div>
 
       <AdminBottomNav active="ADMIN_AGENDA" onNavigate={onNavigate} />
-    </div>
+    </div >
   );
 };
 

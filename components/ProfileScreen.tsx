@@ -18,6 +18,8 @@ const ProfileScreen: React.FC<ProfileProps> = ({ onNavigate }) => {
   const [saving, setSaving] = useState(false);
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
+  const [address, setAddress] = useState('');
+  const [neighborhood, setNeighborhood] = useState('');
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -40,6 +42,8 @@ const ProfileScreen: React.FC<ProfileProps> = ({ onNavigate }) => {
         setProfile(profileData);
         setFullName(profileData.full_name || '');
         setPhone(profileData.phone || '');
+        setAddress(profileData.address || '');
+        setNeighborhood(profileData.neighborhood || '');
         setAvatarUrl(profileData.avatar_url);
       } else {
         // Initialize with email
@@ -61,6 +65,8 @@ const ProfileScreen: React.FC<ProfileProps> = ({ onNavigate }) => {
         id: user.id,
         full_name: fullName,
         phone: phone,
+        address: address,
+        neighborhood: neighborhood,
         avatar_url: avatarUrl
       });
       alert('Perfil salvo com sucesso!');
@@ -195,6 +201,7 @@ const ProfileScreen: React.FC<ProfileProps> = ({ onNavigate }) => {
                       <h4 className="font-bold truncate text-base">{pet.name}</h4>
                     </div>
                     <p className="text-xs text-gray-500">{pet.breed} {pet.age ? `• ${pet.age}` : ''}</p>
+                    {neighborhood && <p className="text-[10px] text-primary">{neighborhood}</p>}
                   </div>
                   <div className="flex gap-2">
                     <button
@@ -247,6 +254,24 @@ const ProfileScreen: React.FC<ProfileProps> = ({ onNavigate }) => {
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder="(11) 99999-9999"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-gray-500 ml-1">Endereço</label>
+              <input
+                className="w-full bg-white dark:bg-surface-dark border border-gray-200 rounded-xl h-12 px-4 focus:ring-1 focus:ring-primary outline-none"
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                placeholder="Rua, Número, Complemento"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-gray-500 ml-1">Bairro</label>
+              <input
+                className="w-full bg-white dark:bg-surface-dark border border-gray-200 rounded-xl h-12 px-4 focus:ring-1 focus:ring-primary outline-none"
+                value={neighborhood}
+                onChange={(e) => setNeighborhood(e.target.value)}
+                placeholder="Seu Bairro"
               />
             </div>
           </div>

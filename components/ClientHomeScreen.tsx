@@ -179,6 +179,9 @@ const ClientHomeScreen: React.FC<ClientHomeProps> = ({ onNavigate, onSelectServi
                   </div>
                 </div>
                 <p className="text-[12px] font-medium text-center truncate w-full">{pet.name}</p>
+                {profile?.neighborhood && (
+                  <p className="text-[9px] text-gray-400 text-center truncate w-full -mt-1">{profile.neighborhood}</p>
+                )}
               </div>
             ))}
             <div
