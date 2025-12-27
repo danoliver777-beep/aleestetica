@@ -370,42 +370,7 @@ const AdminDashboardScreen: React.FC<AdminDashboardProps> = ({ onNavigate }) => 
                   </div>
                   <p className="text-2xl font-bold text-purple-900 dark:text-purple-100">{financialData.completedAppointments}</p>
                 </div>
-                <div className="bg-orange-50 dark:bg-orange-900/20 rounded-xl p-4 col-span-2">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="material-symbols-outlined text-orange-500 text-lg">confirmation_number</span>
-                    <span className="text-xs font-medium text-orange-700 dark:text-orange-300">Ticket Médio</span>
-                  </div>
-                  <p className="text-2xl font-bold text-orange-900 dark:text-orange-100">
-                    R$ {financialData.averageTicket.toFixed(2)}
-                  </p>
-                </div>
               </div>
-
-              {/* Top Services */}
-              {financialData.topServices.length > 0 && (
-                <div>
-                  <h4 className="text-sm font-bold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
-                    <span className="material-symbols-outlined text-primary text-lg">star</span>
-                    Serviços Mais Populares
-                  </h4>
-                  <div className="space-y-2">
-                    {financialData.topServices.map((svc, idx) => (
-                      <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-xl">
-                        <div className="flex items-center gap-3">
-                          <span className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-sm font-bold">
-                            {idx + 1}
-                          </span>
-                          <div>
-                            <p className="text-sm font-medium text-gray-900 dark:text-white">{svc.name}</p>
-                            <p className="text-xs text-gray-500">{svc.count} agendamento{svc.count > 1 ? 's' : ''}</p>
-                          </div>
-                        </div>
-                        <p className="text-sm font-bold text-green-600">R$ {svc.revenue.toFixed(0)}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
 
               {/* Close Button */}
               <button
