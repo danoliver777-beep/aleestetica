@@ -4,7 +4,7 @@ import { Screen } from '../types';
 import Header from './Header';
 import AdminBottomNav from './AdminBottomNav';
 import { useAuth } from '../context/AuthContext';
-import { getAdminStats, getAllAppointments, AppointmentWithDetails } from '../lib/database';
+import { getAdminStats, getAllAppointments, getFinancialStats, AppointmentWithDetails, FinancialStats } from '../lib/database';
 
 interface AdminDashboardProps {
   onNavigate: (s: Screen) => void;
@@ -15,6 +15,9 @@ const AdminDashboardScreen: React.FC<AdminDashboardProps> = ({ onNavigate }) => 
   const [stats, setStats] = useState({ todayCount: 0, pendingCount: 0, todayRevenue: 0 });
   const [upcomingAppointments, setUpcomingAppointments] = useState<AppointmentWithDetails[]>([]);
   const [selectedAppointment, setSelectedAppointment] = useState<AppointmentWithDetails | null>(null);
+  const [showFinancialModal, setShowFinancialModal] = useState(false);
+  const [financialData, setFinancialData] = useState<FinancialStats | null>(null);
+  const [financialLoading, setFinancialLoading] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -40,6 +43,19 @@ const AdminDashboardScreen: React.FC<AdminDashboardProps> = ({ onNavigate }) => 
       console.error('Error loading admin data:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadFinancialData = async () => {
+    setFinancialLoading(true);
+    try {
+      const data = await getFinancialStats();
+      setFinancialData(data);
+      setShowFinancialModal(true);
+    } catch (err) {
+      console.error('Error loading financial data:', err);
+    } finally {
+      setFinancialLoading(false);
     }
   };
 
@@ -97,7 +113,10 @@ const AdminDashboardScreen: React.FC<AdminDashboardProps> = ({ onNavigate }) => 
               <p className="text-[10px] font-medium text-gray-500">Pendentes</p>
             </div>
           </div>
-          <div className="min-w-[140px] flex-1 rounded-xl bg-white dark:bg-surface-dark p-4 shadow-sm border border-gray-100 flex flex-col justify-between h-[120px]">
+          <div
+            onClick={loadFinancialData}
+            className="min-w-[140px] flex-1 rounded-xl bg-white dark:bg-surface-dark p-4 shadow-sm border border-gray-100 flex flex-col justify-between h-[120px] cursor-pointer hover:border-green-300 hover:shadow-md transition-all active:scale-95"
+          >
             <div className="rounded-full bg-green-500/10 p-2 text-green-600 w-fit">
               <span className="material-symbols-outlined text-[20px]">attach_money</span>
             </div>
@@ -276,6 +295,124 @@ const AdminDashboardScreen: React.FC<AdminDashboardProps> = ({ onNavigate }) => 
               >
                 <span>Ver na Agenda</span>
                 <span className="material-symbols-outlined text-lg">arrow_forward</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Financial Dashboard Modal */}
+      {showFinancialModal && financialData && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-surface-dark w-full max-w-sm rounded-3xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
+            {/* Modal Header */}
+            <div className="relative bg-gradient-to-br from-green-500 to-emerald-600 p-6">
+              <button
+                onClick={() => setShowFinancialModal(false)}
+                className="absolute top-4 right-4 h-8 w-8 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white hover:bg-white/30 transition-colors"
+              >
+                <span className="material-symbols-outlined text-sm">close</span>
+              </button>
+              <div className="flex items-center gap-3">
+                <div className="h-12 w-12 rounded-full bg-white/20 flex items-center justify-center">
+                  <span className="material-symbols-outlined text-white text-2xl">analytics</span>
+                </div>
+                <div>
+                  <h3 className="text-white text-xl font-bold">Painel Financeiro</h3>
+                  <p className="text-white/80 text-sm">
+                    {new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Main Revenue Card */}
+            <div className="p-6 space-y-6">
+              <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 rounded-2xl p-5">
+                <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Receita do Mês</p>
+                <p className="text-4xl font-extrabold text-gray-900 dark:text-white">
+                  <span className="text-xl">R$</span>{financialData.currentMonthRevenue.toFixed(2)}
+                </p>
+                {financialData.lastMonthRevenue > 0 && (
+                  <div className="flex items-center gap-2 mt-2">
+                    {financialData.currentMonthRevenue >= financialData.lastMonthRevenue ? (
+                      <>
+                        <span className="material-symbols-outlined text-green-500 text-sm">trending_up</span>
+                        <span className="text-xs font-medium text-green-600">
+                          +{(((financialData.currentMonthRevenue - financialData.lastMonthRevenue) / financialData.lastMonthRevenue) * 100).toFixed(1)}% vs mês anterior
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="material-symbols-outlined text-red-500 text-sm">trending_down</span>
+                        <span className="text-xs font-medium text-red-600">
+                          {(((financialData.currentMonthRevenue - financialData.lastMonthRevenue) / financialData.lastMonthRevenue) * 100).toFixed(1)}% vs mês anterior
+                        </span>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Metrics Grid */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="material-symbols-outlined text-blue-500 text-lg">calendar_month</span>
+                    <span className="text-xs font-medium text-blue-700 dark:text-blue-300">Agendamentos</span>
+                  </div>
+                  <p className="text-2xl font-bold text-blue-900 dark:text-blue-100">{financialData.currentMonthAppointments}</p>
+                </div>
+                <div className="bg-purple-50 dark:bg-purple-900/20 rounded-xl p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="material-symbols-outlined text-purple-500 text-lg">task_alt</span>
+                    <span className="text-xs font-medium text-purple-700 dark:text-purple-300">Concluídos</span>
+                  </div>
+                  <p className="text-2xl font-bold text-purple-900 dark:text-purple-100">{financialData.completedAppointments}</p>
+                </div>
+                <div className="bg-orange-50 dark:bg-orange-900/20 rounded-xl p-4 col-span-2">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="material-symbols-outlined text-orange-500 text-lg">confirmation_number</span>
+                    <span className="text-xs font-medium text-orange-700 dark:text-orange-300">Ticket Médio</span>
+                  </div>
+                  <p className="text-2xl font-bold text-orange-900 dark:text-orange-100">
+                    R$ {financialData.averageTicket.toFixed(2)}
+                  </p>
+                </div>
+              </div>
+
+              {/* Top Services */}
+              {financialData.topServices.length > 0 && (
+                <div>
+                  <h4 className="text-sm font-bold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                    <span className="material-symbols-outlined text-primary text-lg">star</span>
+                    Serviços Mais Populares
+                  </h4>
+                  <div className="space-y-2">
+                    {financialData.topServices.map((svc, idx) => (
+                      <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-xl">
+                        <div className="flex items-center gap-3">
+                          <span className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-sm font-bold">
+                            {idx + 1}
+                          </span>
+                          <div>
+                            <p className="text-sm font-medium text-gray-900 dark:text-white">{svc.name}</p>
+                            <p className="text-xs text-gray-500">{svc.count} agendamento{svc.count > 1 ? 's' : ''}</p>
+                          </div>
+                        </div>
+                        <p className="text-sm font-bold text-green-600">R$ {svc.revenue.toFixed(0)}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Close Button */}
+              <button
+                onClick={() => setShowFinancialModal(false)}
+                className="w-full h-12 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-bold text-sm flex items-center justify-center gap-2 hover:bg-gray-200 dark:hover:bg-gray-700 active:scale-95 transition-all"
+              >
+                Fechar
               </button>
             </div>
           </div>

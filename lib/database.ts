@@ -370,6 +370,97 @@ export const getAdminStats = async (): Promise<{
     return { todayCount, pendingCount, todayRevenue };
 };
 
+// Get financial statistics for the dashboard
+export interface FinancialStats {
+    currentMonthRevenue: number;
+    lastMonthRevenue: number;
+    currentMonthAppointments: number;
+    completedAppointments: number;
+    averageTicket: number;
+    topServices: { name: string; count: number; revenue: number }[];
+}
+
+export const getFinancialStats = async (): Promise<FinancialStats> => {
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth();
+
+    // Current month date range
+    const currentMonthStart = new Date(currentYear, currentMonth, 1).toISOString().split('T')[0];
+    const currentMonthEnd = new Date(currentYear, currentMonth + 1, 0).toISOString().split('T')[0];
+
+    // Last month date range
+    const lastMonthStart = new Date(currentYear, currentMonth - 1, 1).toISOString().split('T')[0];
+    const lastMonthEnd = new Date(currentYear, currentMonth, 0).toISOString().split('T')[0];
+
+    // Fetch current month appointments
+    const { data: currentMonthApps, error: currentError } = await supabase
+        .from('appointments')
+        .select('id, status, service:services(id, name, price)')
+        .gte('scheduled_date', currentMonthStart)
+        .lte('scheduled_date', currentMonthEnd);
+
+    // Fetch last month appointments
+    const { data: lastMonthApps, error: lastError } = await supabase
+        .from('appointments')
+        .select('id, status, service:services(price)')
+        .gte('scheduled_date', lastMonthStart)
+        .lte('scheduled_date', lastMonthEnd);
+
+    if (currentError || lastError) {
+        console.error('Error fetching financial stats:', currentError || lastError);
+        return {
+            currentMonthRevenue: 0,
+            lastMonthRevenue: 0,
+            currentMonthAppointments: 0,
+            completedAppointments: 0,
+            averageTicket: 0,
+            topServices: []
+        };
+    }
+
+    // Calculate current month revenue (from completed or confirmed appointments)
+    const currentMonthRevenue = currentMonthApps?.reduce((sum, a) => {
+        const svc = a.service as any;
+        return sum + (svc?.price || 0);
+    }, 0) || 0;
+
+    // Calculate last month revenue
+    const lastMonthRevenue = lastMonthApps?.reduce((sum, a) => {
+        const svc = a.service as any;
+        return sum + (svc?.price || 0);
+    }, 0) || 0;
+
+    const currentMonthAppointments = currentMonthApps?.length || 0;
+    const completedAppointments = currentMonthApps?.filter(a => a.status === 'COMPLETED').length || 0;
+    const averageTicket = currentMonthAppointments > 0 ? currentMonthRevenue / currentMonthAppointments : 0;
+
+    // Calculate top services
+    const serviceMap = new Map<string, { name: string; count: number; revenue: number }>();
+    currentMonthApps?.forEach(a => {
+        const svc = a.service as any;
+        if (svc?.name) {
+            const existing = serviceMap.get(svc.id) || { name: svc.name, count: 0, revenue: 0 };
+            existing.count += 1;
+            existing.revenue += svc.price || 0;
+            serviceMap.set(svc.id, existing);
+        }
+    });
+
+    const topServices = Array.from(serviceMap.values())
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 5);
+
+    return {
+        currentMonthRevenue,
+        lastMonthRevenue,
+        currentMonthAppointments,
+        completedAppointments,
+        averageTicket,
+        topServices
+    };
+};
+
 // Create a new service (admin only)
 export const createService = async (service: Omit<Service, 'id'>) => {
     const { data, error } = await supabase
