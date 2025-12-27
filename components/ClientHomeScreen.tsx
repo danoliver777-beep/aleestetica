@@ -193,23 +193,6 @@ const ClientHomeScreen: React.FC<ClientHomeProps> = ({ onNavigate, onSelectServi
           </div>
         </section>
 
-        {/* Promo Banner */}
-        <section className="px-4 mt-8">
-          <div className="w-full h-32 rounded-xl bg-gradient-to-r from-blue-600 to-blue-400 relative overflow-hidden flex items-center shadow-lg">
-            <div className="pl-6 w-2/3 z-10">
-              <p className="text-white/90 text-[10px] font-bold uppercase tracking-wider mb-1">Oferta Especial</p>
-              <h3 className="text-white text-xl font-bold leading-tight mb-2">20% OFF na Hidratação</h3>
-              <button
-                onClick={() => onNavigate('BOOKING')}
-                className="bg-white text-primary text-[10px] font-bold py-2 px-4 rounded-full"
-              >
-                Agendar Agora
-              </button>
-            </div>
-            <div className="absolute right-[-20px] bottom-[-20px] w-40 h-40 bg-white/20 rounded-full blur-2xl"></div>
-          </div>
-        </section>
-
         {/* Services Section */}
         <section className="mt-8 px-4">
           <div className="flex items-center justify-between mb-4">
