@@ -1,9 +1,9 @@
-
 import React, { useState, useEffect } from 'react';
 import { Screen } from '../types';
 import AdminBottomNav from './AdminBottomNav';
 import { getAllAppointments, updateAppointmentStatus, deleteAppointment, AppointmentWithDetails } from '../lib/database';
 import AdminBookingModal from './AdminBookingModal';
+import AdminCalendarView from './AdminCalendarView';
 
 interface AdminAgendaProps {
   onNavigate: (s: Screen, appointment?: AppointmentWithDetails) => void;
@@ -15,6 +15,8 @@ const AdminAgendaScreen: React.FC<AdminAgendaProps> = ({ onNavigate }) => {
   const [filter, setFilter] = useState<'ALL' | 'PENDING' | 'CONFIRMED'>('ALL');
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [showBookingModal, setShowBookingModal] = useState(false);
+  const [showCalendarView, setShowCalendarView] = useState(false);
+  const [calendarAppointments, setCalendarAppointments] = useState<AppointmentWithDetails[]>([]);
 
   useEffect(() => {
     loadAppointments();
@@ -27,6 +29,20 @@ const AdminAgendaScreen: React.FC<AdminAgendaProps> = ({ onNavigate }) => {
       setAppointments(data);
     } catch (err) {
       console.error('Error loading appointments:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const openCalendar = async () => {
+    setLoading(true);
+    try {
+      // Load ALL appointments for calendar view
+      const allData = await getAllAppointments();
+      setCalendarAppointments(allData);
+      setShowCalendarView(true);
+    } catch (err) {
+      console.error('Error loading calendar data:', err);
     } finally {
       setLoading(false);
     }
@@ -117,9 +133,18 @@ const AdminAgendaScreen: React.FC<AdminAgendaProps> = ({ onNavigate }) => {
             <span className="text-[10px] font-medium text-primary">Painel Admin</span>
           </div>
         </div>
-        <button onClick={loadAppointments} className="flex size-10 items-center justify-center rounded-full text-slate-700">
-          <span className="material-symbols-outlined">refresh</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={openCalendar}
+            className="flex h-10 px-4 items-center gap-2 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors"
+          >
+            <span className="material-symbols-outlined">calendar_month</span>
+            <span className="hidden sm:inline text-xs font-bold">Visão Geral</span>
+          </button>
+          <button onClick={loadAppointments} className="flex size-10 items-center justify-center rounded-full text-slate-700 hover:bg-slate-100">
+            <span className="material-symbols-outlined">refresh</span>
+          </button>
+        </div>
       </header>
 
       {/* Stats */}
@@ -327,6 +352,13 @@ const AdminAgendaScreen: React.FC<AdminAgendaProps> = ({ onNavigate }) => {
           loadAppointments();
           // Optional: Refresh stats or other data if needed
         }}
+      />
+
+      {/* Full Screen Calendar View */}
+      <AdminCalendarView
+        isOpen={showCalendarView}
+        onClose={() => setShowCalendarView(false)}
+        appointments={calendarAppointments}
       />
     </div >
   );
