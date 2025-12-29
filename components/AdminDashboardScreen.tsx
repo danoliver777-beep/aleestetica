@@ -4,7 +4,7 @@ import { Screen } from '../types';
 import Header from './Header';
 import AdminBottomNav from './AdminBottomNav';
 import { useAuth } from '../context/AuthContext';
-import { getAdminStats, getAllAppointments, getFinancialStats, AppointmentWithDetails, FinancialStats } from '../lib/database';
+import { getAdminStats, getAllAppointments, getFinancialStats, deleteAppointment, AppointmentWithDetails, FinancialStats } from '../lib/database';
 
 interface AdminDashboardProps {
   onNavigate: (s: Screen) => void;
@@ -60,6 +60,22 @@ const AdminDashboardScreen: React.FC<AdminDashboardProps> = ({ onNavigate }) => 
       console.error('Error loading financial data:', err);
     } finally {
       setFinancialLoading(false);
+    }
+  };
+
+  const handleDeleteAppointment = async (e: React.MouseEvent, app: AppointmentWithDetails) => {
+    e.stopPropagation();
+    const petName = app.pet?.name || 'Pet';
+    if (!confirm(`Tem certeza que deseja excluir o agendamento de ${petName}?`)) {
+      return;
+    }
+    try {
+      await deleteAppointment(app.id);
+      setAllUpcomingAppointments(prev => prev.filter(a => a.id !== app.id));
+      alert('Agendamento excluído com sucesso!');
+    } catch (err) {
+      console.error('Error deleting appointment:', err);
+      alert('Erro ao excluir agendamento');
     }
   };
 
@@ -240,6 +256,13 @@ const AdminDashboardScreen: React.FC<AdminDashboardProps> = ({ onNavigate }) => 
                         {app.service?.name} • {app.profile?.full_name || 'Cliente'} • <span className="capitalize">{new Date(app.scheduled_date + 'T00:00:00').toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' })}</span>
                       </p>
                     </div>
+                    <button
+                      onClick={(e) => handleDeleteAppointment(e, app)}
+                      className="opacity-0 group-hover:opacity-100 p-2 rounded-full text-red-500 hover:bg-red-50 transition-all"
+                      title="Excluir agendamento"
+                    >
+                      <span className="material-symbols-outlined text-lg">delete</span>
+                    </button>
                   </div>
                 ))
               })()
