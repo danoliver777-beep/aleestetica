@@ -258,7 +258,7 @@ const AdminDashboardScreen: React.FC<AdminDashboardProps> = ({ onNavigate }) => 
                     </div>
                     <button
                       onClick={(e) => handleDeleteAppointment(e, app)}
-                      className="opacity-0 group-hover:opacity-100 p-2 rounded-full text-red-500 hover:bg-red-50 transition-all"
+                      className="p-2 rounded-full text-red-500 hover:bg-red-50 transition-all"
                       title="Excluir agendamento"
                     >
                       <span className="material-symbols-outlined text-lg">delete</span>
