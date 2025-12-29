@@ -20,7 +20,17 @@ const BookingScreen: React.FC<BookingProps> = ({ service: initialService, onBack
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  const times = ['09:00', '10:00', '11:00', '14:00', '15:00', '16:00', '17:00'];
+  // Horários de funcionamento: 07:00-12:00 e 13:00-19:00 (intervalo de almoço 12-13)
+  const times = ['07:00', '08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00'];
+
+  // Dias permitidos: Terça(2) a Sábado(6)
+  const allowedDays = [2, 3, 4, 5, 6]; // 0=Dom, 1=Seg, 2=Ter, 3=Qua, 4=Qui, 5=Sex, 6=Sáb
+
+  const isDateAllowed = (dateStr: string) => {
+    if (!dateStr) return true;
+    const date = new Date(dateStr + 'T00:00:00');
+    return allowedDays.includes(date.getDay());
+  };
 
   useEffect(() => {
     if (user) loadData();
@@ -54,6 +64,12 @@ const BookingScreen: React.FC<BookingProps> = ({ service: initialService, onBack
   const handleConfirm = async () => {
     if (!user || !selectedPetId || !selectedServiceId || !selectedDate || !selectedTime) {
       alert('Por favor, preencha todos os campos');
+      return;
+    }
+
+    // Validar dia da semana
+    if (!isDateAllowed(selectedDate)) {
+      alert('⚠️ Data não permitida!\n\nFuncionamos apenas de Terça a Sábado.\nPor favor, selecione outra data.');
       return;
     }
 
@@ -164,8 +180,15 @@ const BookingScreen: React.FC<BookingProps> = ({ service: initialService, onBack
             value={selectedDate}
             onChange={(e) => setSelectedDate(e.target.value)}
             min={new Date().toISOString().split('T')[0]}
-            className="w-full h-14 px-4 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 focus:ring-2 focus:ring-primary"
+            className={`w-full h-14 px-4 rounded-xl bg-white dark:bg-gray-800 border focus:ring-2 focus:ring-primary ${!isDateAllowed(selectedDate) && selectedDate ? 'border-red-400' : 'border-gray-200'}`}
           />
+          {selectedDate && !isDateAllowed(selectedDate) && (
+            <p className="text-red-500 text-xs mt-2 flex items-center gap-1">
+              <span className="material-symbols-outlined text-sm">warning</span>
+              Funcionamos de Terça a Sábado. Selecione outro dia.
+            </p>
+          )}
+          <p className="text-gray-400 text-xs mt-2">Horário: Ter-Sáb, 07h-12h e 13h-19h</p>
         </section>
 
         {/* Time Selection */}
