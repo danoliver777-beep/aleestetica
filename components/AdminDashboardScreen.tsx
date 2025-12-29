@@ -13,7 +13,8 @@ interface AdminDashboardProps {
 const AdminDashboardScreen: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
   const { user, signOut } = useAuth();
   const [stats, setStats] = useState({ todayCount: 0, pendingCount: 0, todayRevenue: 0 });
-  const [upcomingAppointments, setUpcomingAppointments] = useState<AppointmentWithDetails[]>([]);
+  const [allUpcomingAppointments, setAllUpcomingAppointments] = useState<AppointmentWithDetails[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
   const [selectedAppointment, setSelectedAppointment] = useState<AppointmentWithDetails | null>(null);
   const [showFinancialModal, setShowFinancialModal] = useState(false);
   const [financialData, setFinancialData] = useState<FinancialStats | null>(null);
@@ -37,8 +38,11 @@ const AdminDashboardScreen: React.FC<AdminDashboardProps> = ({ onNavigate }) => 
       const today = new Date().toISOString().split('T')[0];
       const upcoming = appointmentsData
         .filter(a => a.scheduled_date >= today)
-        .slice(0, 5);
-      setUpcomingAppointments(upcoming);
+        .sort((a, b) => {
+          if (a.scheduled_date !== b.scheduled_date) return a.scheduled_date.localeCompare(b.scheduled_date);
+          return a.scheduled_time.localeCompare(b.scheduled_time);
+        });
+      setAllUpcomingAppointments(upcoming);
     } catch (err) {
       console.error('Error loading admin data:', err);
     } finally {
@@ -150,52 +154,95 @@ const AdminDashboardScreen: React.FC<AdminDashboardProps> = ({ onNavigate }) => 
 
         {/* Upcoming Appointments */}
         <div className="mt-8 bg-white dark:bg-surface-dark rounded-t-3xl shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] border-t border-gray-100 flex-1">
-          <div className="flex items-center justify-between px-6 pt-6 pb-2">
-            <h3 className="text-lg font-bold">Próximos Clientes</h3>
-            <button className="text-sm font-semibold text-primary" onClick={() => onNavigate('ADMIN_AGENDA')}>Ver todos</button>
+          <div className="flex flex-col gap-4 px-6 pt-6 pb-2">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-bold">Próximos Clientes</h3>
+              <button className="text-sm font-semibold text-primary" onClick={() => onNavigate('ADMIN_AGENDA')}>Ver todos</button>
+            </div>
+
+            {/* Search Bar */}
+            <div className="relative">
+              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">search</span>
+              <input
+                type="text"
+                placeholder="Buscar por dia, data ou bairro (ex: Aracaju, Barra...)"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl py-2.5 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+              />
+            </div>
           </div>
           <div className="flex flex-col px-2 pb-6">
             {loading ? (
               <div className="flex items-center justify-center py-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
               </div>
-            ) : upcomingAppointments.length === 0 ? (
-              <div className="text-center py-8 text-gray-400">
-                <span className="material-symbols-outlined text-4xl mb-2">event_available</span>
-                <p className="text-sm">Nenhum agendamento pendente</p>
-              </div>
             ) : (
-              upcomingAppointments.map(app => (
-                <div
-                  key={app.id}
-                  onClick={() => setSelectedAppointment(app)}
-                  className="group relative flex items-center gap-4 rounded-xl p-3 transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer"
-                >
-                  <div className="relative shrink-0">
-                    <div className="h-14 w-14 rounded-xl bg-gray-200 flex items-center justify-center overflow-hidden">
-                      {app.pet?.image_url ? (
-                        <div className="w-full h-full bg-cover bg-center" style={{ backgroundImage: `url("${app.pet.image_url}")` }}></div>
-                      ) : (
-                        <span className="material-symbols-outlined text-gray-400">pets</span>
-                      )}
+              (() => {
+                const filtered = allUpcomingAppointments.filter(app => {
+                  if (!searchTerm) return true;
+                  const term = searchTerm.toLowerCase();
+
+                  const dateObj = new Date(app.scheduled_date + 'T00:00:00');
+                  const dateDirect = app.scheduled_date; // yyyy-mm-dd
+                  const dateBr = dateObj.toLocaleDateString('pt-BR'); // dd/mm/yyyy
+                  const weekday = dateObj.toLocaleDateString('pt-BR', { weekday: 'long' });
+
+                  return (
+                    app.pet?.name.toLowerCase().includes(term) ||
+                    app.profile?.full_name?.toLowerCase().includes(term) ||
+                    app.profile?.address?.toLowerCase().includes(term) ||
+                    app.profile?.neighborhood?.toLowerCase().includes(term) ||
+                    app.service?.name.toLowerCase().includes(term) ||
+                    dateBr.includes(term) ||
+                    dateDirect.includes(term) ||
+                    weekday.toLowerCase().includes(term)
+                  );
+                });
+
+                const displayList = searchTerm ? filtered : filtered.slice(0, 5);
+
+                if (displayList.length === 0) {
+                  return (
+                    <div className="text-center py-8 text-gray-400">
+                      <span className="material-symbols-outlined text-4xl mb-2">search_off</span>
+                      <p className="text-sm">Nenhum agendamento encontrado</p>
                     </div>
-                    <div className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-white shadow-sm ring-1 ring-black/5">
-                      <span className="material-symbols-outlined text-[12px] text-blue-500">shower</span>
+                  );
+                }
+
+                return displayList.map(app => (
+                  <div
+                    key={app.id}
+                    onClick={() => setSelectedAppointment(app)}
+                    className="group relative flex items-center gap-4 rounded-xl p-3 transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer"
+                  >
+                    <div className="relative shrink-0">
+                      <div className="h-14 w-14 rounded-xl bg-gray-200 flex items-center justify-center overflow-hidden">
+                        {app.pet?.image_url ? (
+                          <div className="w-full h-full bg-cover bg-center" style={{ backgroundImage: `url("${app.pet.image_url}")` }}></div>
+                        ) : (
+                          <span className="material-symbols-outlined text-gray-400">pets</span>
+                        )}
+                      </div>
+                      <div className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-white shadow-sm ring-1 ring-black/5">
+                        <span className="material-symbols-outlined text-[12px] text-blue-500">shower</span>
+                      </div>
+                    </div>
+                    <div className="flex flex-1 flex-col justify-center">
+                      <div className="flex justify-between items-center mb-0.5">
+                        <p className="text-base font-bold">{app.pet?.name || 'Pet'}</p>
+                        <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${app.status === 'PENDING' ? 'bg-orange-100 text-orange-700' : 'bg-green-100 text-green-700'}`}>
+                          {app.scheduled_time.substring(0, 5)}
+                        </span>
+                      </div>
+                      <p className="line-clamp-1 text-xs text-gray-500">
+                        {app.service?.name} • {app.profile?.full_name || 'Cliente'} • <span className="capitalize">{new Date(app.scheduled_date + 'T00:00:00').toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' })}</span>
+                      </p>
                     </div>
                   </div>
-                  <div className="flex flex-1 flex-col justify-center">
-                    <div className="flex justify-between items-center mb-0.5">
-                      <p className="text-base font-bold">{app.pet?.name || 'Pet'}</p>
-                      <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${app.status === 'PENDING' ? 'bg-orange-100 text-orange-700' : 'bg-green-100 text-green-700'}`}>
-                        {app.scheduled_time.substring(0, 5)}
-                      </span>
-                    </div>
-                    <p className="line-clamp-1 text-xs text-gray-500">
-                      {app.service?.name} • {app.profile?.full_name || 'Cliente'} • <span className="capitalize">{new Date(app.scheduled_date + 'T00:00:00').toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' })}</span>
-                    </p>
-                  </div>
-                </div>
-              ))
+                ))
+              })()
             )}
           </div>
         </div>
