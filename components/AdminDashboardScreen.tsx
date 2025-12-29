@@ -191,7 +191,7 @@ const AdminDashboardScreen: React.FC<AdminDashboardProps> = ({ onNavigate }) => 
                       </span>
                     </div>
                     <p className="line-clamp-1 text-xs text-gray-500">
-                      {app.service?.name} • {app.profile?.full_name || 'Cliente'} • {new Date(app.scheduled_date + 'T00:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
+                      {app.service?.name} • {app.profile?.full_name || 'Cliente'} • <span className="capitalize">{new Date(app.scheduled_date + 'T00:00:00').toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' })}</span>
                     </p>
                   </div>
                 </div>
