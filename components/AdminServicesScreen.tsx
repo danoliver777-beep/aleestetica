@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Screen } from '../types';
 import AdminBottomNav from './AdminBottomNav';
-import { getServices, createService, deleteService, Service } from '../lib/database';
+import { getServices, createService, deleteService, updateService, Service } from '../lib/database';
 
 interface AdminServicesProps {
   onNavigate: (s: Screen) => void;
@@ -14,6 +14,8 @@ const AdminServicesScreen: React.FC<AdminServicesProps> = ({ onNavigate }) => {
   const [showForm, setShowForm] = useState(false);
   const [newService, setNewService] = useState({ name: '', description: '', price: '', duration: '' });
   const [saving, setSaving] = useState(false);
+  const [editingService, setEditingService] = useState<Service | null>(null);
+  const [editForm, setEditForm] = useState({ name: '', description: '', price: '', duration: '', image_url: '' });
 
   useEffect(() => {
     loadServices();
@@ -70,6 +72,43 @@ const AdminServicesScreen: React.FC<AdminServicesProps> = ({ onNavigate }) => {
     }
   };
 
+  const handleEdit = (service: Service) => {
+    setEditForm({
+      name: service.name,
+      description: service.description || '',
+      price: service.price.toString(),
+      duration: service.duration || '',
+      image_url: service.image_url || ''
+    });
+    setEditingService(service);
+  };
+
+  const handleUpdate = async () => {
+    if (!editingService) return;
+    if (!editForm.name.trim() || !editForm.price) {
+      alert('Nome e preço são obrigatórios');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      await updateService(editingService.id, {
+        name: editForm.name.trim(),
+        description: editForm.description.trim() || null,
+        price: parseFloat(editForm.price),
+        duration: editForm.duration.trim() || null,
+        image_url: editForm.image_url.trim() || null
+      });
+      setEditingService(null);
+      loadServices();
+    } catch (err) {
+      console.error('Error updating service:', err);
+      alert('Erro ao atualizar serviço');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <div className="flex flex-col min-h-screen pb-28 animate-in slide-in-from-right duration-300">
       <header className="sticky top-0 z-40 bg-surface-light/95 dark:bg-background-dark/95 backdrop-blur-md border-b border-gray-100 transition-colors">
@@ -116,12 +155,20 @@ const AdminServicesScreen: React.FC<AdminServicesProps> = ({ onNavigate }) => {
                 <div className="flex flex-col flex-1 justify-center min-h-[80px]">
                   <div className="flex justify-between items-start">
                     <h3 className="text-base font-bold leading-tight truncate mr-2">{service.name}</h3>
-                    <button
-                      onClick={() => handleDelete(service.id)}
-                      className="text-red-400 p-1 -mt-1 -mr-2 rounded-full hover:bg-red-50"
-                    >
-                      <span className="material-symbols-outlined text-[20px]">delete</span>
-                    </button>
+                    <div className="flex items-center gap-1 -mt-1 -mr-2">
+                      <button
+                        onClick={() => handleEdit(service)}
+                        className="text-blue-500 p-1 rounded-full hover:bg-blue-50"
+                      >
+                        <span className="material-symbols-outlined text-[20px]">edit</span>
+                      </button>
+                      <button
+                        onClick={() => handleDelete(service.id)}
+                        className="text-red-400 p-1 rounded-full hover:bg-red-50"
+                      >
+                        <span className="material-symbols-outlined text-[20px]">delete</span>
+                      </button>
+                    </div>
                   </div>
                   <p className="text-gray-500 text-xs font-normal leading-relaxed line-clamp-1 mt-1">{service.description || 'Sem descrição'}</p>
                   <div className="flex items-center gap-3 mt-auto pt-2">
@@ -194,6 +241,77 @@ const AdminServicesScreen: React.FC<AdminServicesProps> = ({ onNavigate }) => {
                 className="w-full h-14 bg-primary text-white rounded-xl font-bold mt-4 disabled:opacity-70"
               >
                 {saving ? 'Salvando...' : 'Criar Serviço'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Service Modal */}
+      {editingService && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-end justify-center">
+          <div className="bg-white rounded-t-3xl w-full max-w-md p-6 animate-in slide-in-from-bottom">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-bold">Editar Serviço</h3>
+              <button onClick={() => setEditingService(null)} className="text-gray-400">
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="text-xs font-semibold text-gray-500 ml-1">Nome *</label>
+                <input
+                  value={editForm.name}
+                  onChange={(e) => setEditForm(s => ({ ...s, name: e.target.value }))}
+                  className="w-full h-12 px-4 rounded-xl bg-gray-50 border border-gray-200 mt-1"
+                  placeholder="Ex: Banho Completo"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-gray-500 ml-1">Descrição</label>
+                <input
+                  value={editForm.description}
+                  onChange={(e) => setEditForm(s => ({ ...s, description: e.target.value }))}
+                  className="w-full h-12 px-4 rounded-xl bg-gray-50 border border-gray-200 mt-1"
+                  placeholder="Descrição do serviço"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 ml-1">Preço (R$) *</label>
+                  <input
+                    type="number"
+                    value={editForm.price}
+                    onChange={(e) => setEditForm(s => ({ ...s, price: e.target.value }))}
+                    className="w-full h-12 px-4 rounded-xl bg-gray-50 border border-gray-200 mt-1"
+                    placeholder="0.00"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 ml-1">Duração</label>
+                  <input
+                    value={editForm.duration}
+                    onChange={(e) => setEditForm(s => ({ ...s, duration: e.target.value }))}
+                    className="w-full h-12 px-4 rounded-xl bg-gray-50 border border-gray-200 mt-1"
+                    placeholder="Ex: 1h30"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-gray-500 ml-1">URL da Imagem</label>
+                <input
+                  value={editForm.image_url}
+                  onChange={(e) => setEditForm(s => ({ ...s, image_url: e.target.value }))}
+                  className="w-full h-12 px-4 rounded-xl bg-gray-50 border border-gray-200 mt-1"
+                  placeholder="https://exemplo.com/imagem.jpg"
+                />
+              </div>
+              <button
+                onClick={handleUpdate}
+                disabled={saving}
+                className="w-full h-14 bg-primary text-white rounded-xl font-bold mt-4 disabled:opacity-70"
+              >
+                {saving ? 'Salvando...' : 'Salvar Alterações'}
               </button>
             </div>
           </div>
