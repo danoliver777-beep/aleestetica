@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Screen } from '../types';
 import AdminBottomNav from './AdminBottomNav';
 import { getAllAppointments, updateAppointmentStatus, deleteAppointment, AppointmentWithDetails } from '../lib/database';
+import AdminBookingModal from './AdminBookingModal';
 
 interface AdminAgendaProps {
   onNavigate: (s: Screen, appointment?: AppointmentWithDetails) => void;
@@ -13,6 +14,7 @@ const AdminAgendaScreen: React.FC<AdminAgendaProps> = ({ onNavigate }) => {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'ALL' | 'PENDING' | 'CONFIRMED'>('ALL');
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [showBookingModal, setShowBookingModal] = useState(false);
 
   useEffect(() => {
     loadAppointments();
@@ -308,6 +310,24 @@ const AdminAgendaScreen: React.FC<AdminAgendaProps> = ({ onNavigate }) => {
       </div>
 
       <AdminBottomNav active="ADMIN_AGENDA" onNavigate={onNavigate} />
+
+      {/* Floating Action Button for New Appointment */}
+      <button
+        onClick={() => setShowBookingModal(true)}
+        className="fixed bottom-24 right-4 h-14 w-14 rounded-full bg-primary text-white shadow-lg shadow-primary/30 flex items-center justify-center hover:bg-primary-dark transition-all active:scale-95 z-30"
+      >
+        <span className="material-symbols-outlined text-3xl">add</span>
+      </button>
+
+      {/* New Appointment Modal */}
+      <AdminBookingModal
+        isOpen={showBookingModal}
+        onClose={() => setShowBookingModal(false)}
+        onSuccess={() => {
+          loadAppointments();
+          // Optional: Refresh stats or other data if needed
+        }}
+      />
     </div >
   );
 };

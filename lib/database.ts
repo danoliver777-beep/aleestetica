@@ -41,6 +41,19 @@ export const upsertProfile = async (profile: Partial<Profile> & { id: string }) 
     return data;
 };
 
+export const getAllProfiles = async (): Promise<Profile[]> => {
+    const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .order('full_name');
+
+    if (error) {
+        console.error('Error fetching all profiles:', error);
+        return [];
+    }
+    return data || [];
+};
+
 // ============ PETS ============
 
 export interface Pet {
