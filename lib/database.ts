@@ -164,6 +164,57 @@ export interface Appointment {
     service?: Service;
 }
 
+/**
+ * Verifica se existe conflito de horário para uma data/hora específica.
+ * Retorna true se o horário já está ocupado por outro agendamento ativo.
+ */
+export const checkTimeConflict = async (
+    scheduled_date: string,
+    scheduled_time: string
+): Promise<{ hasConflict: boolean; conflictingAppointment?: Appointment }> => {
+    const { data, error } = await supabase
+        .from('appointments')
+        .select('*, pet:pets(name), service:services(name)')
+        .eq('scheduled_date', scheduled_date)
+        .eq('scheduled_time', scheduled_time)
+        .neq('status', 'CANCELED')
+        .limit(1);
+
+    if (error) {
+        console.error('Error checking time conflict:', error);
+        return { hasConflict: false };
+    }
+
+    if (data && data.length > 0) {
+        return { hasConflict: true, conflictingAppointment: data[0] as Appointment };
+    }
+
+    return { hasConflict: false };
+};
+
+/**
+ * Verifica conflitos para múltiplas datas/horários de uma vez.
+ * Retorna lista de datas que têm conflito.
+ */
+export const checkMultipleTimeConflicts = async (
+    dates: string[],
+    scheduled_time: string
+): Promise<string[]> => {
+    const { data, error } = await supabase
+        .from('appointments')
+        .select('scheduled_date')
+        .in('scheduled_date', dates)
+        .eq('scheduled_time', scheduled_time)
+        .neq('status', 'CANCELED');
+
+    if (error) {
+        console.error('Error checking multiple time conflicts:', error);
+        return [];
+    }
+
+    return data?.map(app => app.scheduled_date) || [];
+};
+
 export const getAppointments = async (userId: string): Promise<Appointment[]> => {
     const { data, error } = await supabase
         .from('appointments')

@@ -4,6 +4,7 @@ import {
     getPets,
     getServices,
     createAppointment,
+    checkMultipleTimeConflicts,
     Profile,
     Pet,
     Service
@@ -123,20 +124,67 @@ const AdminBookingModal: React.FC<AdminBookingModalProps> = ({ isOpen, onClose, 
         try {
             const datesToSchedule = calculateDates();
 
-            const promises = datesToSchedule.map(scheduleDate =>
-                createAppointment({
-                    user_id: selectedProfileId,
-                    pet_id: selectedPetId,
-                    service_id: selectedServiceId,
-                    scheduled_date: scheduleDate,
-                    scheduled_time: time,
-                    notes: 'Agendado pelo Administrador'
-                })
-            );
+            // ====== VERIFICAÇÃO DE CONFLITOS ======
+            const conflictingDates = await checkMultipleTimeConflicts(datesToSchedule, time);
 
-            await Promise.all(promises);
+            if (conflictingDates.length > 0) {
+                const formattedDates = conflictingDates.map(d => {
+                    const dt = new Date(d + 'T00:00:00');
+                    return dt.toLocaleDateString('pt-BR', { weekday: 'short', day: 'numeric', month: 'short' });
+                }).join(', ');
 
-            alert(`${datesToSchedule.length} agendamento(s) criado(s) com sucesso!`);
+                const proceed = confirm(
+                    `⚠️ CONFLITO DE HORÁRIO DETECTADO!\n\n` +
+                    `Já existem agendamentos para as seguintes datas às ${time}:\n` +
+                    `${formattedDates}\n\n` +
+                    `Deseja continuar mesmo assim? Os agendamentos em conflito serão ignorados.`
+                );
+
+                if (!proceed) {
+                    setSaving(false);
+                    return;
+                }
+
+                // Remove datas com conflito
+                const safeDates = datesToSchedule.filter(d => !conflictingDates.includes(d));
+
+                if (safeDates.length === 0) {
+                    alert('Todos os horários selecionados já estão ocupados. Escolha outro horário.');
+                    setSaving(false);
+                    return;
+                }
+
+                // Criar apenas os agendamentos sem conflito
+                const promises = safeDates.map(scheduleDate =>
+                    createAppointment({
+                        user_id: selectedProfileId,
+                        pet_id: selectedPetId,
+                        service_id: selectedServiceId,
+                        scheduled_date: scheduleDate,
+                        scheduled_time: time,
+                        notes: 'Agendado pelo Administrador'
+                    })
+                );
+
+                await Promise.all(promises);
+                alert(`${safeDates.length} agendamento(s) criado(s) com sucesso! (${conflictingDates.length} conflito(s) ignorado(s))`);
+            } else {
+                // Sem conflitos - criar todos
+                const promises = datesToSchedule.map(scheduleDate =>
+                    createAppointment({
+                        user_id: selectedProfileId,
+                        pet_id: selectedPetId,
+                        service_id: selectedServiceId,
+                        scheduled_date: scheduleDate,
+                        scheduled_time: time,
+                        notes: 'Agendado pelo Administrador'
+                    })
+                );
+
+                await Promise.all(promises);
+                alert(`${datesToSchedule.length} agendamento(s) criado(s) com sucesso!`);
+            }
+
             onSuccess();
             onClose();
 
@@ -220,8 +268,8 @@ const AdminBookingModal: React.FC<AdminBookingModalProps> = ({ isOpen, onClose, 
                                                     key={pet.id}
                                                     onClick={() => setSelectedPetId(pet.id)}
                                                     className={`flex items-center gap-2 px-4 py-2 rounded-full border transition-colors shrink-0 ${selectedPetId === pet.id
-                                                            ? 'bg-primary text-white border-primary'
-                                                            : 'bg-white text-gray-600 border-gray-200 hover:border-primary'
+                                                        ? 'bg-primary text-white border-primary'
+                                                        : 'bg-white text-gray-600 border-gray-200 hover:border-primary'
                                                         }`}
                                                 >
                                                     <span className="material-symbols-outlined text-sm">pets</span>
@@ -302,8 +350,8 @@ const AdminBookingModal: React.FC<AdminBookingModalProps> = ({ isOpen, onClose, 
                                                         key={type}
                                                         onClick={() => setRecurrenceType(type)}
                                                         className={`flex-1 py-2 text-xs font-bold rounded-lg transition-colors ${recurrenceType === type
-                                                                ? 'bg-primary text-white'
-                                                                : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-100'
+                                                            ? 'bg-primary text-white'
+                                                            : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-100'
                                                             }`}
                                                     >
                                                         {type === 'WEEKLY' ? 'Semanal' : type === 'MONTHLY' ? 'Mensal' : 'Anual'}
