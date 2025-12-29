@@ -21,7 +21,7 @@ interface ClientHomeProps {
 }
 
 const ClientHomeScreen: React.FC<ClientHomeProps> = ({ onNavigate, onSelectService }) => {
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [pets, setPets] = useState<Pet[]>([]);
   const [services, setServices] = useState<Service[]>([]);
@@ -141,16 +141,27 @@ const ClientHomeScreen: React.FC<ClientHomeProps> = ({ onNavigate, onSelectServi
           </div>
         }
         rightIcon={
-          <div className="relative">
-            <span className="material-symbols-outlined">notifications</span>
-            {notifications.filter(n => !n.read).length > 0 && (
-              <span className="absolute -top-1 -right-1 size-4 bg-red-500 rounded-full border-2 border-white dark:border-[#1A202C] flex items-center justify-center">
-                <span className="text-[8px] font-bold text-white">{notifications.filter(n => !n.read).length > 9 ? '9+' : notifications.filter(n => !n.read).length}</span>
-              </span>
-            )}
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => signOut()}
+              className="flex size-10 items-center justify-center rounded-full hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors text-red-500 mr-1"
+              title="Sair"
+            >
+              <span className="material-symbols-outlined">logout</span>
+            </button>
+            <button
+              onClick={() => setShowNotifications(true)}
+              className="flex size-10 items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors relative"
+            >
+              <span className="material-symbols-outlined">notifications</span>
+              {notifications.filter(n => !n.read).length > 0 && (
+                <span className="absolute -top-1 -right-1 size-4 bg-red-500 rounded-full border-2 border-white dark:border-[#1A202C] flex items-center justify-center">
+                  <span className="text-[8px] font-bold text-white">{notifications.filter(n => !n.read).length > 9 ? '9+' : notifications.filter(n => !n.read).length}</span>
+                </span>
+              )}
+            </button>
           </div>
         }
-        onRightClick={() => setShowNotifications(true)}
       />
 
       <main>

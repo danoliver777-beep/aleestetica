@@ -11,12 +11,12 @@ interface HeaderProps {
   className?: string; // Allow combining classes
 }
 
-const Header: React.FC<HeaderProps> = ({ 
-  title, 
-  leftIcon, 
-  rightIcon, 
-  onLeftClick, 
-  onRightClick, 
+const Header: React.FC<HeaderProps> = ({
+  title,
+  leftIcon,
+  rightIcon,
+  onLeftClick,
+  onRightClick,
   children,
   className = ''
 }) => {
@@ -26,7 +26,7 @@ const Header: React.FC<HeaderProps> = ({
         {/* Left Section */}
         <div className="flex items-center justify-center min-w-[40px]">
           {leftIcon && (
-            <button 
+            <button
               onClick={onLeftClick}
               className={`flex size-10 items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors ${!onLeftClick ? 'cursor-default hover:bg-transparent' : ''}`}
             >
@@ -41,30 +41,36 @@ const Header: React.FC<HeaderProps> = ({
 
         {/* Center Section: Title */}
         <div className="flex-1 flex items-center justify-center text-center px-2">
-           {typeof title === 'string' ? (
-             <h1 className="text-lg font-bold text-gray-900 dark:text-white truncate">{title}</h1>
-           ) : (
-             title
-           )}
+          {typeof title === 'string' ? (
+            <h1 className="text-lg font-bold text-gray-900 dark:text-white truncate">{title}</h1>
+          ) : (
+            title
+          )}
         </div>
 
         {/* Right Section */}
         <div className="flex items-center justify-center min-w-[40px]">
           {rightIcon && (
-             <button 
-               onClick={onRightClick}
-               className={`flex size-10 items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors ${!onRightClick ? 'cursor-default hover:bg-transparent' : ''}`}
-             >
-               {typeof rightIcon === 'string' ? (
-                 <span className="material-symbols-outlined text-2xl text-gray-700 dark:text-gray-200">{rightIcon}</span>
-               ) : (
-                 rightIcon
-               )}
-             </button>
-           )}
+            onRightClick ? (
+              <button
+                onClick={onRightClick}
+                className="flex size-10 items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              >
+                {typeof rightIcon === 'string' ? (
+                  <span className="material-symbols-outlined text-2xl text-gray-700 dark:text-gray-200">{rightIcon}</span>
+                ) : (
+                  rightIcon
+                )}
+              </button>
+            ) : (
+              <div className="flex items-center justify-center">
+                {rightIcon}
+              </div>
+            )
+          )}
         </div>
       </div>
-      
+
       {/* Optional Children content (e.g. Search bar, Tabs) */}
       {children && (
         <div className="px-4 pb-3">
