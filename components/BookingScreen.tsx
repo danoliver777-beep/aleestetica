@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { getPets, getServices, createAppointment, Pet, Service } from '../lib/database';
+import { getPets, getServices, createAppointment, checkTimeConflict, Pet, Service } from '../lib/database';
 
 interface BookingProps {
   service?: { id: string; name: string; description: string; price: number; duration: string; image_url: string; rating: number } | null;
@@ -59,6 +59,19 @@ const BookingScreen: React.FC<BookingProps> = ({ service: initialService, onBack
 
     setSaving(true);
     try {
+      // Verificar conflito de horário
+      const { hasConflict } = await checkTimeConflict(selectedDate, selectedTime);
+
+      if (hasConflict) {
+        alert(
+          '⚠️ Horário indisponível!\n\n' +
+          `Já existe um agendamento para ${selectedDate} às ${selectedTime}.\n\n` +
+          'Por favor, escolha outro horário.'
+        );
+        setSaving(false);
+        return;
+      }
+
       await createAppointment({
         user_id: user.id,
         pet_id: selectedPetId,
