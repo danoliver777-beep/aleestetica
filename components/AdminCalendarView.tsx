@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { AppointmentWithDetails, updateAppointment, checkTimeConflict } from '../lib/database';
+import { AppointmentWithDetails, updateAppointment, checkTimeConflict, deleteAppointment } from '../lib/database';
 
 interface AdminCalendarViewProps {
     isOpen: boolean;
@@ -21,6 +21,7 @@ const AdminCalendarView: React.FC<AdminCalendarViewProps> = ({
     const [dropTarget, setDropTarget] = useState<{ date: string; hour: number } | null>(null);
     const [isUpdating, setIsUpdating] = useState(false);
     const [showSidebar, setShowSidebar] = useState(false);
+    const [isOverTrash, setIsOverTrash] = useState(false);
 
     const weekDays = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
     const weekDaysShort = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
@@ -110,6 +111,32 @@ const AdminCalendarView: React.FC<AdminCalendarViewProps> = ({
         } catch (err) {
             console.error('Error updating appointment:', err);
             alert('❌ Erro ao reagendar.');
+        } finally {
+            setIsUpdating(false);
+            setDraggedAppointment(null);
+        }
+    };
+
+    const handleTrashDrop = async (e: React.DragEvent) => {
+        e.preventDefault();
+        setIsOverTrash(false);
+
+        if (!draggedAppointment || isUpdating) return;
+
+        const confirmDelete = window.confirm(`Deseja realmente excluir o agendamento de ${draggedAppointment.pet?.name || 'este pet'}?`);
+        if (!confirmDelete) {
+            setDraggedAppointment(null);
+            return;
+        }
+
+        setIsUpdating(true);
+        try {
+            await deleteAppointment(draggedAppointment.id);
+            if (onRefresh) onRefresh();
+            alert('✅ Agendamento excluído com sucesso!');
+        } catch (err) {
+            console.error('Error deleting appointment:', err);
+            alert('❌ Erro ao excluir agendamento.');
         } finally {
             setIsUpdating(false);
             setDraggedAppointment(null);
@@ -259,7 +286,55 @@ const AdminCalendarView: React.FC<AdminCalendarViewProps> = ({
                             ))
                         )}
                     </div>
+
+                    {/* Trash Drop Zone */}
+                    <div
+                        onDragOver={(e) => {
+                            e.preventDefault();
+                            setIsOverTrash(true);
+                        }}
+                        onDragLeave={() => setIsOverTrash(false)}
+                        onDrop={handleTrashDrop}
+                        className={`
+                            px-4 py-3 border-t transition-all duration-200 flex items-center justify-center gap-2
+                            ${isOverTrash
+                                ? 'bg-red-500 text-white py-6 border-red-600'
+                                : 'bg-gray-50 dark:bg-gray-800 text-red-500 border-gray-200 dark:border-gray-700'}
+                            ${draggedAppointment ? 'animate-pulse' : ''}
+                        `}
+                    >
+                        <span className={`material-symbols-outlined ${isOverTrash ? 'text-2xl scale-125' : 'text-xl'} transition-transform`}>
+                            delete
+                        </span>
+                        <span className="text-xs font-bold uppercase tracking-wider">
+                            {isOverTrash ? 'Soltar para excluir' : 'Excluir'}
+                        </span>
+                    </div>
                 </div>
+
+                {/* Fixed Trash Overlay (Visible when dragging and sidebar is collapsed) */}
+                {draggedAppointment && !showSidebar && (
+                    <div
+                        onDragOver={(e) => {
+                            e.preventDefault();
+                            setIsOverTrash(true);
+                        }}
+                        onDragLeave={() => setIsOverTrash(false)}
+                        onDrop={handleTrashDrop}
+                        className={`
+                            fixed bottom-4 left-4 z-[60] size-16 rounded-full flex items-center justify-center transition-all duration-300 shadow-xl
+                            ${isOverTrash
+                                ? 'bg-red-600 scale-125 ring-4 ring-red-200'
+                                : 'bg-red-500 scale-100'}
+                            animate-in slide-in-from-bottom-4
+                        `}
+                    >
+                        <span className="material-symbols-outlined text-white text-3xl">delete</span>
+                        <div className="absolute -top-12 left-1/2 -translate-x-1/2 bg-red-600 text-white text-[10px] font-bold px-2 py-1 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity">
+                            Excluir
+                        </div>
+                    </div>
+                )}
 
                 {/* Overlay for mobile sidebar */}
                 {showSidebar && (
