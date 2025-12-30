@@ -14,6 +14,7 @@ const AdminAgendaScreen: React.FC<AdminAgendaProps> = ({ onNavigate }) => {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'ALL' | 'PENDING' | 'CONFIRMED'>('ALL');
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [selectedTime, setSelectedTime] = useState('09:00');
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [showCalendarView, setShowCalendarView] = useState(false);
   const [calendarAppointments, setCalendarAppointments] = useState<AppointmentWithDetails[]>([]);
@@ -348,6 +349,8 @@ const AdminAgendaScreen: React.FC<AdminAgendaProps> = ({ onNavigate }) => {
       {/* New Appointment Modal */}
       <AdminBookingModal
         isOpen={showBookingModal}
+        initialDate={selectedDate}
+        initialTime={selectedTime}
         onClose={() => {
           setShowBookingModal(false);
           if (openedFromCalendar) {
@@ -380,6 +383,7 @@ const AdminAgendaScreen: React.FC<AdminAgendaProps> = ({ onNavigate }) => {
           setOpenedFromCalendar(true);
           setShowCalendarView(false);
           setSelectedDate(date);
+          setSelectedTime(time);
           setShowBookingModal(true);
         }}
       />

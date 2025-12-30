@@ -14,9 +14,17 @@ interface AdminBookingModalProps {
     isOpen: boolean;
     onClose: () => void;
     onSuccess: () => void;
+    initialDate?: string;
+    initialTime?: string;
 }
 
-const AdminBookingModal: React.FC<AdminBookingModalProps> = ({ isOpen, onClose, onSuccess }) => {
+const AdminBookingModal: React.FC<AdminBookingModalProps> = ({
+    isOpen,
+    onClose,
+    onSuccess,
+    initialDate,
+    initialTime
+}) => {
     // Data States
     const [profiles, setProfiles] = useState<Profile[]>([]);
     const [pets, setPets] = useState<Pet[]>([]);
@@ -46,12 +54,17 @@ const AdminBookingModal: React.FC<AdminBookingModalProps> = ({ isOpen, onClose, 
     useEffect(() => {
         if (isOpen) {
             loadInitialData();
-            // Default date tomorrow
-            const tomorrow = new Date();
-            tomorrow.setDate(tomorrow.getDate() + 1);
-            setDate(tomorrow.toISOString().split('T')[0]);
+            if (initialDate) {
+                setDate(initialDate);
+            } else {
+                // Default date tomorrow
+                const tomorrow = new Date();
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                setDate(tomorrow.toISOString().split('T')[0]);
+            }
+            if (initialTime) setTime(initialTime);
         }
-    }, [isOpen]);
+    }, [isOpen, initialDate, initialTime]);
 
     // Load pets when profile changes
     useEffect(() => {
