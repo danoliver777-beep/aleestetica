@@ -268,7 +268,11 @@ const WeekView: React.FC<any> = ({ currentDate, weekDays, getWeekDays, getAppoin
 
                     {/* Days Columns */}
                     {weekDates.map((date: Date, dayIdx: number) => {
-                        const dateStr = date.toISOString().split('T')[0];
+                        // Formatar data localmente para evitar problema de fuso horário (UTC vs local)
+                        const year = date.getFullYear();
+                        const month = String(date.getMonth() + 1).padStart(2, '0');
+                        const day = String(date.getDate()).padStart(2, '0');
+                        const dateStr = `${year}-${month}-${day}`;
                         const dayApps = getAppointmentsForDate(dateStr);
 
                         return (
