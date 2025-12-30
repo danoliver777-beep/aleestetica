@@ -60,8 +60,8 @@ const AdminCalendarView: React.FC<AdminCalendarViewProps> = ({ isOpen, onClose, 
     return (
         <div className="fixed inset-0 z-50 bg-white dark:bg-[#202124] flex flex-col animate-in fade-in duration-200">
             {/* Header */}
-            <header className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-[#202124]">
-                <div className="flex items-center gap-6">
+            <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-[#202124] gap-3">
+                <div className="flex items-center justify-between sm:justify-start sm:gap-6">
                     <div className="flex items-center gap-2">
                         <button onClick={onClose} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
                             <span className="material-symbols-outlined text-gray-600 dark:text-gray-300">arrow_back</span>
@@ -72,28 +72,45 @@ const AdminCalendarView: React.FC<AdminCalendarViewProps> = ({ isOpen, onClose, 
                         </span>
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    {/* Toggle Semana/Mês - Visível em mobile */}
+                    <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-0.5 flex text-sm sm:hidden">
                         <button
-                            onClick={goToToday}
-                            className="px-4 py-1.5 rounded border border-gray-300 dark:border-gray-600 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                            onClick={() => setViewMode('WEEK')}
+                            className={`px-3 py-1.5 rounded-md font-medium transition-all ${viewMode === 'WEEK' ? 'bg-white dark:bg-gray-800 shadow-sm text-gray-900 dark:text-white' : 'text-gray-500 hover:text-gray-900 dark:hover:text-gray-200'}`}
                         >
-                            Hoje
+                            Semana
                         </button>
-                        <div className="flex items-center gap-0.5 ml-2">
-                            <button onClick={() => navigate('PREV')} className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700">
-                                <span className="material-symbols-outlined text-sm">chevron_left</span>
-                            </button>
-                            <button onClick={() => navigate('NEXT')} className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700">
-                                <span className="material-symbols-outlined text-sm">chevron_right</span>
-                            </button>
-                        </div>
-                        <h2 className="text-lg font-normal ml-2 min-w-[150px]">
-                            {months[currentDate.getMonth()]} {currentDate.getFullYear()}
-                        </h2>
+                        <button
+                            onClick={() => setViewMode('MONTH')}
+                            className={`px-3 py-1.5 rounded-md font-medium transition-all ${viewMode === 'MONTH' ? 'bg-white dark:bg-gray-800 shadow-sm text-gray-900 dark:text-white' : 'text-gray-500 hover:text-gray-900 dark:hover:text-gray-200'}`}
+                        >
+                            Mês
+                        </button>
                     </div>
                 </div>
 
-                <div className="flex items-center gap-3">
+                <div className="flex items-center justify-between sm:justify-start gap-2">
+                    <button
+                        onClick={goToToday}
+                        className="px-4 py-1.5 rounded border border-gray-300 dark:border-gray-600 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                    >
+                        Hoje
+                    </button>
+                    <div className="flex items-center gap-0.5">
+                        <button onClick={() => navigate('PREV')} className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700">
+                            <span className="material-symbols-outlined text-sm">chevron_left</span>
+                        </button>
+                        <button onClick={() => navigate('NEXT')} className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700">
+                            <span className="material-symbols-outlined text-sm">chevron_right</span>
+                        </button>
+                    </div>
+                    <h2 className="text-base sm:text-lg font-normal ml-1 sm:ml-2 min-w-[100px] sm:min-w-[150px]">
+                        {months[currentDate.getMonth()]} {currentDate.getFullYear()}
+                    </h2>
+                </div>
+
+                {/* Toggle Semana/Mês - Desktop */}
+                <div className="hidden sm:flex items-center gap-3">
                     <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-0.5 flex text-sm">
                         <button
                             onClick={() => setViewMode('WEEK')}
@@ -195,10 +212,10 @@ const MonthView: React.FC<any> = ({ currentDate, weekDays, getDaysInMonth, getFi
                                             <div
                                                 key={app.id}
                                                 className={`truncate text-[10px] px-1.5 py-0.5 rounded border-l-2 ${app.status === 'CONFIRMED' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 border-green-500' : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-500'}`}
-                                                title={`${app.scheduled_time} - ${app.pet?.name} (${app.service?.name})`}
+                                                title={`${app.scheduled_time} - ${app.pet?.name} - ${app.profile?.full_name} (${app.service?.name})`}
                                             >
                                                 <span className="font-bold mr-1">{app.scheduled_time.substring(0, 5)}</span>
-                                                {app.pet?.name}
+                                                {app.pet?.name} <span className="opacity-70">- {app.profile?.full_name?.split(' ')[0]}</span>
                                             </div>
                                         ))}
                                     </div>
@@ -275,14 +292,14 @@ const WeekView: React.FC<any> = ({ currentDate, weekDays, getWeekDays, getAppoin
                                         <div
                                             key={app.id}
                                             className={`absolute left-1 right-1 rounded-md p-2 text-xs overflow-hidden border-l-4 shadow-sm cursor-pointer hover:brightness-95 transition-all z-10 ${app.status === 'CONFIRMED'
-                                                    ? 'bg-green-100 dark:bg-green-900/40 border-green-500 text-green-900 dark:text-green-100'
-                                                    : 'bg-blue-100 dark:bg-blue-900/40 border-blue-500 text-blue-900 dark:text-blue-100'
+                                                ? 'bg-green-100 dark:bg-green-900/40 border-green-500 text-green-900 dark:text-green-100'
+                                                : 'bg-blue-100 dark:bg-blue-900/40 border-blue-500 text-blue-900 dark:text-blue-100'
                                                 }`}
                                             style={{ top: `${top}px`, height: `${height}px` }}
-                                            title={`${app.scheduled_time} - ${app.profile?.full_name}`}
+                                            title={`${app.scheduled_time} - ${app.pet?.name} - ${app.profile?.full_name}`}
                                         >
                                             <div className="font-bold mb-0.5">{app.pet?.name}</div>
-                                            <div className="text-[10px] opacity-80">{app.scheduled_time} - {app.service?.name}</div>
+                                            <div className="text-[10px] opacity-80">{app.scheduled_time} - {app.profile?.full_name?.split(' ')[0]}</div>
                                         </div>
                                     );
                                 })}
