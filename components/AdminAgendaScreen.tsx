@@ -364,6 +364,12 @@ const AdminAgendaScreen: React.FC<AdminAgendaProps> = ({ onNavigate }) => {
           const allData = await getAllAppointments();
           setCalendarAppointments(allData);
         }}
+        onCreateAppointment={(date, time) => {
+          // Close calendar and open booking modal
+          setShowCalendarView(false);
+          setSelectedDate(date);
+          setShowBookingModal(true);
+        }}
       />
     </div >
   );
