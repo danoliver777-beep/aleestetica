@@ -235,12 +235,14 @@ const WeekView: React.FC<any> = ({ currentDate, weekDays, getWeekDays, getAppoin
 
     return (
         <div className="flex h-full flex-col overflow-hidden">
-            {/* Header (Days) */}
-            <div className="flex border-b border-gray-200 dark:border-gray-700 ml-14">
+            {/* Header (Days) - usando mesma estrutura flex da grade */}
+            <div className="flex border-b border-gray-200 dark:border-gray-700">
+                {/* Espaço para coluna de horas */}
+                <div className="w-14 flex-none border-r border-gray-200 dark:border-gray-700"></div>
                 {weekDates.map((date: Date, idx: number) => {
                     const isToday = date.toDateString() === new Date().toDateString();
                     return (
-                        <div key={idx} className="flex-1 text-center py-3 border-l border-gray-200 dark:border-gray-700">
+                        <div key={idx} className="flex-1 text-center py-3 border-l border-gray-200 dark:border-gray-700 min-w-[120px]">
                             <div className={`text-xs uppercase font-semibold mb-1 ${isToday ? 'text-blue-600' : 'text-gray-500'}`}>
                                 {weekDays[date.getDay()]}
                             </div>
