@@ -355,10 +355,10 @@ const WeekViewCompact: React.FC<WeekViewCompactProps> = ({
             <div className="flex-1 overflow-y-auto no-scrollbar relative">
                 <div className="flex min-w-full">
                     {/* Time Column */}
-                    <div className="w-10 sm:w-12 flex-none border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-[#202124] sticky left-0 z-10">
+                    <div className="w-12 sm:w-14 flex-none border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-[#202124] sticky left-0 z-10">
                         {hours.map(hour => (
-                            <div key={hour} className="h-12 sm:h-14 border-b border-gray-100 dark:border-gray-800 relative">
-                                <span className="absolute top-0 left-0.5 sm:left-1 text-[9px] sm:text-[10px] text-gray-400">
+                            <div key={hour} className="h-12 sm:h-14 border-b border-gray-100 dark:border-gray-800 flex items-center justify-center">
+                                <span className="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400">
                                     {String(hour).padStart(2, '0')}
                                 </span>
                             </div>
@@ -413,10 +413,10 @@ const WeekViewCompact: React.FC<WeekViewCompactProps> = ({
                                         <div
                                             key={app.id}
                                             className={`absolute left-0.5 right-0.5 rounded p-1 text-[9px] sm:text-[10px] overflow-hidden border-l-2 shadow-sm z-20 pointer-events-none ${app.status === 'CONFIRMED'
-                                                    ? 'bg-green-100 dark:bg-green-900/40 border-green-500 text-green-800 dark:text-green-200'
-                                                    : app.status === 'PENDING'
-                                                        ? 'bg-orange-100 dark:bg-orange-900/40 border-orange-500 text-orange-800 dark:text-orange-200'
-                                                        : 'bg-blue-100 dark:bg-blue-900/40 border-blue-500 text-blue-800 dark:text-blue-200'
+                                                ? 'bg-green-100 dark:bg-green-900/40 border-green-500 text-green-800 dark:text-green-200'
+                                                : app.status === 'PENDING'
+                                                    ? 'bg-orange-100 dark:bg-orange-900/40 border-orange-500 text-orange-800 dark:text-orange-200'
+                                                    : 'bg-blue-100 dark:bg-blue-900/40 border-blue-500 text-blue-800 dark:text-blue-200'
                                                 }`}
                                             style={{
                                                 top: `${topMobile}px`,

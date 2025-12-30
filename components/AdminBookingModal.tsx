@@ -41,7 +41,7 @@ const AdminBookingModal: React.FC<AdminBookingModalProps> = ({ isOpen, onClose, 
     const [saving, setSaving] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
 
-    const times = ['09:00', '10:00', '11:00', '14:00', '15:00', '16:00', '17:00'];
+    const times = ['07:00', '08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00'];
 
     useEffect(() => {
         if (isOpen) {
