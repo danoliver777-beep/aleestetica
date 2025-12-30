@@ -57,6 +57,8 @@ const AdminCalendarView: React.FC<AdminCalendarViewProps> = ({
     // Drag handlers
     const handleDragStart = (e: React.DragEvent, app: AppointmentWithDetails) => {
         setDraggedAppointment(app);
+        // Collapse sidebar on drag start to give more space for the grid
+        setShowSidebar(false);
         e.dataTransfer.effectAllowed = 'move';
         e.dataTransfer.setData('text/plain', app.id);
     };
@@ -277,11 +279,14 @@ const AdminCalendarView: React.FC<AdminCalendarViewProps> = ({
                         getAppointmentsForDate={getAppointmentsForDate}
                         dropTarget={dropTarget}
                         draggedAppointment={draggedAppointment}
+                        onDragStart={handleDragStart}
+                        onDragEnd={handleDragEnd}
                         onDragOver={handleDragOver}
                         onDragLeave={handleDragLeave}
                         onDrop={handleDrop}
                         onSlotClick={handleSlotClick}
                         hasCreateHandler={!!onCreateAppointment}
+                        isUpdating={isUpdating}
                     />
                 </div>
             </div>
@@ -309,11 +314,14 @@ interface WeekViewCompactProps {
     getAppointmentsForDate: (dateStr: string) => AppointmentWithDetails[];
     dropTarget: { date: string; hour: number } | null;
     draggedAppointment: AppointmentWithDetails | null;
+    onDragStart: (e: React.DragEvent, app: AppointmentWithDetails) => void;
+    onDragEnd: () => void;
     onDragOver: (e: React.DragEvent, date: string, hour: number) => void;
     onDragLeave: () => void;
     onDrop: (e: React.DragEvent, date: string, hour: number) => void;
     onSlotClick: (date: string, hour: number) => void;
     hasCreateHandler: boolean;
+    isUpdating: boolean;
 }
 
 const WeekViewCompact: React.FC<WeekViewCompactProps> = ({
@@ -324,11 +332,14 @@ const WeekViewCompact: React.FC<WeekViewCompactProps> = ({
     getAppointmentsForDate,
     dropTarget,
     draggedAppointment,
+    onDragStart,
+    onDragEnd,
     onDragOver,
     onDragLeave,
     onDrop,
     onSlotClick,
-    hasCreateHandler
+    hasCreateHandler,
+    isUpdating
 }) => {
     return (
         <div className="flex h-full flex-col overflow-hidden">
@@ -412,12 +423,15 @@ const WeekViewCompact: React.FC<WeekViewCompactProps> = ({
                                     return (
                                         <div
                                             key={app.id}
-                                            className={`absolute left-0.5 right-0.5 rounded p-1 text-[9px] sm:text-[10px] overflow-hidden border-l-2 shadow-sm z-20 pointer-events-none ${app.status === 'CONFIRMED'
+                                            draggable={!isUpdating}
+                                            onDragStart={(e) => onDragStart(e, app)}
+                                            onDragEnd={onDragEnd}
+                                            className={`absolute left-0.5 right-0.5 rounded p-1 text-[9px] sm:text-[10px] overflow-hidden border-l-2 shadow-sm z-20 cursor-grab active:cursor-grabbing hover:z-30 transition-all duration-150 ${app.status === 'CONFIRMED'
                                                 ? 'bg-green-100 dark:bg-green-900/40 border-green-500 text-green-800 dark:text-green-200'
                                                 : app.status === 'PENDING'
                                                     ? 'bg-orange-100 dark:bg-orange-900/40 border-orange-500 text-orange-800 dark:text-orange-200'
                                                     : 'bg-blue-100 dark:bg-blue-900/40 border-blue-500 text-blue-800 dark:text-blue-200'
-                                                }`}
+                                                } ${draggedAppointment?.id === app.id ? 'opacity-30 scale-95' : 'hover:scale-[1.02] hover:shadow-md'} ${isUpdating ? 'pointer-events-none opacity-60' : ''}`}
                                             style={{
                                                 top: `${topMobile}px`,
                                                 height: `${heightMobile}px`,
