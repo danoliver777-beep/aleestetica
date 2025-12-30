@@ -204,7 +204,7 @@ const AdminBookingModal: React.FC<AdminBookingModalProps> = ({ isOpen, onClose, 
 
     const filteredProfiles = profiles.filter(p =>
         p.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        p.phone?.includes(searchTerm)
+        p.neighborhood?.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     if (!isOpen) return null;
@@ -247,7 +247,7 @@ const AdminBookingModal: React.FC<AdminBookingModalProps> = ({ isOpen, onClose, 
                                 >
                                     {filteredProfiles.map(profile => (
                                         <option key={profile.id} value={profile.id} className="p-2">
-                                            {profile.full_name || 'Sem nome'} ({profile.phone || 'Sem telefone'})
+                                            {profile.full_name || 'Sem nome'} ({profile.neighborhood || 'Sem bairro'})
                                         </option>
                                     ))}
                                 </select>

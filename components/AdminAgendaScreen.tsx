@@ -17,6 +17,7 @@ const AdminAgendaScreen: React.FC<AdminAgendaProps> = ({ onNavigate }) => {
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [showCalendarView, setShowCalendarView] = useState(false);
   const [calendarAppointments, setCalendarAppointments] = useState<AppointmentWithDetails[]>([]);
+  const [openedFromCalendar, setOpenedFromCalendar] = useState(false);
 
   useEffect(() => {
     loadAppointments();
@@ -347,10 +348,20 @@ const AdminAgendaScreen: React.FC<AdminAgendaProps> = ({ onNavigate }) => {
       {/* New Appointment Modal */}
       <AdminBookingModal
         isOpen={showBookingModal}
-        onClose={() => setShowBookingModal(false)}
-        onSuccess={() => {
+        onClose={() => {
+          setShowBookingModal(false);
+          if (openedFromCalendar) {
+            setOpenedFromCalendar(false);
+            setShowCalendarView(true);
+          }
+        }}
+        onSuccess={async () => {
           loadAppointments();
-          // Optional: Refresh stats or other data if needed
+          // Refresh calendar data if we came from there
+          if (openedFromCalendar) {
+            const allData = await getAllAppointments();
+            setCalendarAppointments(allData);
+          }
         }}
       />
 
@@ -365,7 +376,8 @@ const AdminAgendaScreen: React.FC<AdminAgendaProps> = ({ onNavigate }) => {
           setCalendarAppointments(allData);
         }}
         onCreateAppointment={(date, time) => {
-          // Close calendar and open booking modal
+          // Remember we came from calendar and open booking modal
+          setOpenedFromCalendar(true);
           setShowCalendarView(false);
           setSelectedDate(date);
           setShowBookingModal(true);
