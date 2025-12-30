@@ -359,6 +359,11 @@ const AdminAgendaScreen: React.FC<AdminAgendaProps> = ({ onNavigate }) => {
         isOpen={showCalendarView}
         onClose={() => setShowCalendarView(false)}
         appointments={calendarAppointments}
+        onRefresh={async () => {
+          // Reload all appointments for calendar
+          const allData = await getAllAppointments();
+          setCalendarAppointments(allData);
+        }}
       />
     </div >
   );
