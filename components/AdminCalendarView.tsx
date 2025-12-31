@@ -73,9 +73,10 @@ const AdminCalendarView: React.FC<AdminCalendarViewProps> = ({
         setDraggedAppointment(null);
         setDropTarget(null);
         // Use timeout to prevent trailing click events from triggering right after drop
+        // Increased to 500ms for better mobile/touch browser compatibility
         setTimeout(() => {
             setIsDraggingInternally(false);
-        }, 100);
+        }, 500);
     };
 
     const handleDragOver = (e: React.DragEvent, date: string, hour: number) => {
@@ -163,7 +164,7 @@ const AdminCalendarView: React.FC<AdminCalendarViewProps> = ({
     };
 
     const handleEditAppointment = (app: AppointmentWithDetails) => {
-        if (draggedAppointment || isUpdating) return;
+        if (draggedAppointment || isUpdating || isDraggingInternally) return;
         setSelectedAppointmentForEdit(app);
         setIsEditModalOpen(true);
     };
