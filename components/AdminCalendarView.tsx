@@ -25,6 +25,7 @@ const AdminCalendarView: React.FC<AdminCalendarViewProps> = ({
     const [isOverTrash, setIsOverTrash] = useState(false);
     const [selectedAppointmentForEdit, setSelectedAppointmentForEdit] = useState<AppointmentWithDetails | null>(null);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [isDraggingInternally, setIsDraggingInternally] = useState(false);
 
     const weekDays = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
     const weekDaysShort = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
@@ -61,6 +62,7 @@ const AdminCalendarView: React.FC<AdminCalendarViewProps> = ({
     // Drag handlers
     const handleDragStart = (e: React.DragEvent, app: AppointmentWithDetails) => {
         setDraggedAppointment(app);
+        setIsDraggingInternally(true);
         // Collapse sidebar on drag start to give more space for the grid
         setShowSidebar(false);
         e.dataTransfer.effectAllowed = 'move';
@@ -70,6 +72,10 @@ const AdminCalendarView: React.FC<AdminCalendarViewProps> = ({
     const handleDragEnd = () => {
         setDraggedAppointment(null);
         setDropTarget(null);
+        // Use timeout to prevent trailing click events from triggering right after drop
+        setTimeout(() => {
+            setIsDraggingInternally(false);
+        }, 100);
     };
 
     const handleDragOver = (e: React.DragEvent, date: string, hour: number) => {
@@ -84,6 +90,7 @@ const AdminCalendarView: React.FC<AdminCalendarViewProps> = ({
 
     const handleDrop = async (e: React.DragEvent, date: string, hour: number) => {
         e.preventDefault();
+        e.stopPropagation();
         setDropTarget(null);
 
         if (!draggedAppointment || isUpdating) return;
@@ -148,7 +155,7 @@ const AdminCalendarView: React.FC<AdminCalendarViewProps> = ({
 
     // Click on empty slot to create new appointment
     const handleSlotClick = (date: string, hour: number) => {
-        if (draggedAppointment || isUpdating) return;
+        if (draggedAppointment || isUpdating || isDraggingInternally) return;
         const time = `${String(hour).padStart(2, '0')}:00`;
         if (onCreateAppointment) {
             onCreateAppointment(date, time);
@@ -373,6 +380,7 @@ const AdminCalendarView: React.FC<AdminCalendarViewProps> = ({
                         onEditAppointment={handleEditAppointment}
                         hasCreateHandler={!!onCreateAppointment}
                         isUpdating={isUpdating}
+                        isDraggingInternally={isDraggingInternally}
                     />
                 </div>
             </div>
@@ -422,6 +430,7 @@ interface WeekViewCompactProps {
     onEditAppointment: (app: AppointmentWithDetails) => void;
     hasCreateHandler: boolean;
     isUpdating: boolean;
+    isDraggingInternally: boolean;
 }
 
 const WeekViewCompact: React.FC<WeekViewCompactProps> = ({
@@ -440,7 +449,8 @@ const WeekViewCompact: React.FC<WeekViewCompactProps> = ({
     onSlotClick,
     onEditAppointment,
     hasCreateHandler,
-    isUpdating
+    isUpdating,
+    isDraggingInternally
 }) => {
     return (
         <div className="flex h-full flex-col overflow-hidden">
@@ -495,7 +505,7 @@ const WeekViewCompact: React.FC<WeekViewCompactProps> = ({
                                         <div
                                             key={hour}
                                             className={`h-12 sm:h-14 border-b border-gray-100 dark:border-gray-800 transition-colors ${isDropTarget ? 'bg-blue-100 dark:bg-blue-900/40 ring-1 ring-inset ring-blue-400' : ''
-                                                } ${draggedAppointment ? 'hover:bg-blue-50 dark:hover:bg-blue-900/20' : ''} ${hasCreateHandler && !draggedAppointment ? 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50' : ''
+                                                } ${draggedAppointment ? 'hover:bg-blue-50 dark:hover:bg-blue-900/20' : ''} ${hasCreateHandler && !draggedAppointment && !isDraggingInternally ? 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50' : ''
                                                 }`}
                                             onDragOver={(e) => onDragOver(e, dateStr, hour)}
                                             onDragLeave={onDragLeave}
