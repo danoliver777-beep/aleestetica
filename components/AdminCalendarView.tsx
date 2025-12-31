@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { AppointmentWithDetails, updateAppointment, checkTimeConflict, deleteAppointment } from '../lib/database';
+import AdminEditBookingModal from './AdminEditBookingModal';
 
 interface AdminCalendarViewProps {
     isOpen: boolean;
@@ -22,6 +23,8 @@ const AdminCalendarView: React.FC<AdminCalendarViewProps> = ({
     const [isUpdating, setIsUpdating] = useState(false);
     const [showSidebar, setShowSidebar] = useState(false);
     const [isOverTrash, setIsOverTrash] = useState(false);
+    const [selectedAppointmentForEdit, setSelectedAppointmentForEdit] = useState<AppointmentWithDetails | null>(null);
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
     const weekDays = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
     const weekDaysShort = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
@@ -152,6 +155,12 @@ const AdminCalendarView: React.FC<AdminCalendarViewProps> = ({
         }
     };
 
+    const handleEditAppointment = (app: AppointmentWithDetails) => {
+        if (draggedAppointment || isUpdating) return;
+        setSelectedAppointmentForEdit(app);
+        setIsEditModalOpen(true);
+    };
+
     const weekDates = getWeekDays(currentDate);
     const hours = Array.from({ length: 13 }, (_, i) => i + 7); // 07:00 to 19:00
 
@@ -257,6 +266,7 @@ const AdminCalendarView: React.FC<AdminCalendarViewProps> = ({
                                         ${draggedAppointment?.id === app.id ? 'opacity-40 scale-95' : ''}
                                         ${isUpdating ? 'pointer-events-none opacity-60' : ''}
                                     `}
+                                    onClick={() => handleEditAppointment(app)}
                                 >
                                     <div className="flex items-center gap-1.5">
                                         <div className="size-6 shrink-0 rounded bg-slate-200 dark:bg-gray-600 overflow-hidden flex items-center justify-center">
@@ -360,11 +370,25 @@ const AdminCalendarView: React.FC<AdminCalendarViewProps> = ({
                         onDragLeave={handleDragLeave}
                         onDrop={handleDrop}
                         onSlotClick={handleSlotClick}
+                        onEditAppointment={handleEditAppointment}
                         hasCreateHandler={!!onCreateAppointment}
                         isUpdating={isUpdating}
                     />
                 </div>
             </div>
+
+            {/* Edit Appointment Modal */}
+            <AdminEditBookingModal
+                isOpen={isEditModalOpen}
+                onClose={() => {
+                    setIsEditModalOpen(false);
+                    setSelectedAppointmentForEdit(null);
+                }}
+                onSuccess={() => {
+                    if (onRefresh) onRefresh();
+                }}
+                appointment={selectedAppointmentForEdit}
+            />
 
             {/* Loading overlay */}
             {isUpdating && (
@@ -395,6 +419,7 @@ interface WeekViewCompactProps {
     onDragLeave: () => void;
     onDrop: (e: React.DragEvent, date: string, hour: number) => void;
     onSlotClick: (date: string, hour: number) => void;
+    onEditAppointment: (app: AppointmentWithDetails) => void;
     hasCreateHandler: boolean;
     isUpdating: boolean;
 }
@@ -413,6 +438,7 @@ const WeekViewCompact: React.FC<WeekViewCompactProps> = ({
     onDragLeave,
     onDrop,
     onSlotClick,
+    onEditAppointment,
     hasCreateHandler,
     isUpdating
 }) => {
@@ -512,6 +538,10 @@ const WeekViewCompact: React.FC<WeekViewCompactProps> = ({
                                                 height: `${heightMobile}px`,
                                             }}
                                             title={`${app.scheduled_time} - ${app.pet?.name}`}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                onEditAppointment(app);
+                                            }}
                                         >
                                             <div className="font-bold truncate leading-tight">{app.pet?.name}</div>
                                             <div className="opacity-70 truncate leading-tight hidden sm:block">
