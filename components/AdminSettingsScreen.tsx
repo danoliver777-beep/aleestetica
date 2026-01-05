@@ -3,7 +3,7 @@ import { Screen } from '../types';
 import AdminBottomNav from './AdminBottomNav';
 import Header from './Header';
 import { useAuth } from '../context/AuthContext';
-import { getAdminSetting, upsertAdminSetting } from '../lib/database';
+import { getAdminSetting, upsertAdminSetting, createNotification } from '../lib/database';
 
 // Reusable Toggle Switch Component
 interface ToggleSwitchProps {
@@ -72,6 +72,10 @@ const AdminSettingsScreen: React.FC<AdminSettingsProps> = ({ onNavigate }) => {
         credito: true,
         debito: true,
     });
+
+    const [broadcastTitle, setBroadcastTitle] = useState('');
+    const [broadcastMessage, setBroadcastMessage] = useState('');
+    const [sendingBroadcast, setSendingBroadcast] = useState(false);
 
     // Fetch settings on mount
     useEffect(() => {
@@ -153,6 +157,31 @@ const AdminSettingsScreen: React.FC<AdminSettingsProps> = ({ onNavigate }) => {
         }
     };
 
+    const handleSendBroadcast = async () => {
+        if (!broadcastTitle.trim() || !broadcastMessage.trim()) {
+            alert('Por favor, preencha o título e a mensagem');
+            return;
+        }
+
+        setSendingBroadcast(true);
+        try {
+            await createNotification({
+                user_id: null, // Broadcast to all
+                title: broadcastTitle.trim(),
+                message: broadcastMessage.trim(),
+                type: 'promo'
+            });
+            alert('Notificação enviada com sucesso para todos os clientes!');
+            setBroadcastTitle('');
+            setBroadcastMessage('');
+        } catch (error) {
+            console.error('Error sending broadcast:', error);
+            alert('Erro ao enviar notificação');
+        } finally {
+            setSendingBroadcast(false);
+        }
+    };
+
     const toggleDay = (day: keyof typeof businessHours) => {
         setBusinessHours(prev => ({
             ...prev,
@@ -230,6 +259,49 @@ const AdminSettingsScreen: React.FC<AdminSettingsProps> = ({ onNavigate }) => {
                                     <span className="font-medium">Formas de Pagamento</span>
                                 </div>
                                 <span className="material-symbols-outlined text-gray-400">chevron_right</span>
+                            </button>
+                        </div>
+                    </section>
+
+                    {/* Comunicação com Clientes */}
+                    <section className="bg-white rounded-2xl p-4 shadow-sm border border-primary/20 bg-primary/[0.02]">
+                        <h3 className="text-sm font-bold text-primary mb-4 flex items-center gap-2">
+                            <span className="material-symbols-outlined text-[20px]">campaign</span>
+                            Enviar Notificação Geral
+                        </h3>
+                        <div className="space-y-4">
+                            <div>
+                                <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Título do Comunicado</label>
+                                <input
+                                    value={broadcastTitle}
+                                    onChange={(e) => setBroadcastTitle(e.target.value)}
+                                    placeholder="Ex: 🎉 Promoção de Verão!"
+                                    className="w-full mt-1 p-3 bg-gray-50 border border-gray-100 rounded-xl focus:ring-2 focus:ring-primary text-sm"
+                                />
+                            </div>
+                            <div>
+                                <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Mensagem</label>
+                                <textarea
+                                    value={broadcastMessage}
+                                    onChange={(e) => setBroadcastMessage(e.target.value)}
+                                    placeholder="Descreva o comunicado para seus clientes..."
+                                    rows={3}
+                                    className="w-full mt-1 p-3 bg-gray-50 border border-gray-100 rounded-xl focus:ring-2 focus:ring-primary text-sm resize-none"
+                                />
+                            </div>
+                            <button
+                                onClick={handleSendBroadcast}
+                                disabled={sendingBroadcast || !broadcastTitle || !broadcastMessage}
+                                className="w-full py-4 bg-primary text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-primary/25 active:scale-[0.98] transition-all disabled:opacity-50"
+                            >
+                                {sendingBroadcast ? (
+                                    <div className="size-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                ) : (
+                                    <>
+                                        <span className="material-symbols-outlined text-[20px]">send</span>
+                                        Disparar Comunicado
+                                    </>
+                                )}
                             </button>
                         </div>
                     </section>

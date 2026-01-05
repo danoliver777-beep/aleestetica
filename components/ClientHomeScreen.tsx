@@ -4,15 +4,15 @@ import { Screen } from '../types';
 import BottomNav from './BottomNav';
 import Header from './Header';
 import { useAuth } from '../context/AuthContext';
-import { getPets, getServices, getProfile, getAppointments, Pet, Service, Profile } from '../lib/database';
+import { getPets, getServices, getProfile, getAppointments, getNotifications, markNotificationRead, Pet, Service, Profile, Notification as DBNotification } from '../lib/database';
 
 interface Notification {
   id: string;
-  type: 'appointment' | 'promo' | 'reminder' | 'info';
   title: string;
   message: string;
   date: Date;
   read: boolean;
+  type: 'appointment' | 'promo' | 'reminder' | 'info';
 }
 
 interface ClientHomeProps {
@@ -37,11 +37,12 @@ const ClientHomeScreen: React.FC<ClientHomeProps> = ({ onNavigate, onSelectServi
     if (!user) return;
     setLoading(true);
     try {
-      const [profileData, petsData, servicesData, appointmentsData] = await Promise.all([
+      const [profileData, petsData, servicesData, appointmentsData, dbNotificationsData] = await Promise.all([
         getProfile(user.id),
         getPets(user.id),
         getServices(),
-        getAppointments(user.id)
+        getAppointments(user.id),
+        getNotifications(user.id)
       ]);
       setProfile(profileData);
       setPets(petsData);
@@ -60,14 +61,16 @@ const ClientHomeScreen: React.FC<ClientHomeProps> = ({ onNavigate, onSelectServi
         read: false
       });
 
-      // Promo notification
-      generatedNotifications.push({
-        id: 'promo-1',
-        type: 'promo',
-        title: '🎉 Oferta Especial!',
-        message: 'Ganhe 20% de desconto na Hidratação. Válido por tempo limitado!',
-        date: new Date(),
-        read: false
+      // Add actual notifications from DB
+      (dbNotificationsData || []).forEach(dn => {
+        generatedNotifications.push({
+          id: dn.id,
+          type: dn.type as any,
+          title: dn.title,
+          message: dn.message,
+          date: new Date(dn.created_at),
+          read: dn.read
+        });
       });
 
       // Appointment notifications
@@ -330,7 +333,16 @@ const ClientHomeScreen: React.FC<ClientHomeProps> = ({ onNavigate, onSelectServi
                 notifications.map((notification) => (
                   <div
                     key={notification.id}
-                    onClick={() => setNotifications(prev => prev.map(n => n.id === notification.id ? { ...n, read: true } : n))}
+                    onClick={async () => {
+                      if (!notification.read && notification.id !== 'welcome') {
+                        try {
+                          await markNotificationRead(notification.id);
+                        } catch (e) {
+                          console.error(e);
+                        }
+                      }
+                      setNotifications(prev => prev.map(n => n.id === notification.id ? { ...n, read: true } : n));
+                    }}
                     className={`p-4 rounded-xl border cursor-pointer transition-all hover:shadow-md ${notification.read
                       ? 'bg-gray-50 dark:bg-gray-800/50 border-gray-100 dark:border-gray-700'
                       : 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800'

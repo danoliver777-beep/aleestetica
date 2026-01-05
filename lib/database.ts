@@ -536,7 +536,7 @@ export const getFinancialStats = async (): Promise<FinancialStats> => {
 export const getMonthlyRevenueHistory = async (): Promise<MonthlyHistory[]> => {
     const now = new Date();
     const currentYear = now.getFullYear();
-    
+
     // Fetch all appointments for the current year
     const yearStart = `${currentYear}-01-01`;
     const yearEnd = `${currentYear}-12-31`;
@@ -668,3 +668,56 @@ export const upsertAdminSetting = async (category: string, value: any) => {
     return data;
 };
 
+
+// ============ NOTIFICATIONS ============
+
+export interface Notification {
+    id: string;
+    user_id: string | null;
+    title: string;
+    message: string;
+    type: string;
+    read: boolean;
+    created_at: string;
+}
+
+export const getNotifications = async (userId: string): Promise<Notification[]> => {
+    const { data, error } = await supabase
+        .from('notifications')
+        .select('*')
+        .or(`user_id.eq.${userId},user_id.is.null`)
+        .order('created_at', { ascending: false });
+
+    if (error) {
+        console.error('Error fetching notifications:', error);
+        return [];
+    }
+    return data || [];
+};
+
+export const createNotification = async (notification: Omit<Notification, 'id' | 'created_at' | 'read'>) => {
+    const { data, error } = await supabase
+        .from('notifications')
+        .insert({ ...notification, read: false })
+        .select()
+        .single();
+
+    if (error) {
+        console.error('Error creating notification:', error);
+        throw error;
+    }
+    return data;
+};
+
+export const markNotificationRead = async (id: string) => {
+    const { error } = await supabase
+        .from('notifications')
+        .update({ read: true })
+        .eq('id', id);
+
+    if (error) {
+        console.error('Error marking notification as read:', error);
+        throw error;
+    }
+    return true;
+};
