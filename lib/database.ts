@@ -339,6 +339,24 @@ export const uploadPetImage = async (userId: string, petId: string, file: File):
     return data.publicUrl;
 };
 
+export const uploadServiceImage = async (file: File): Promise<string | null> => {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
+    const filePath = `services/${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+        .from('services')
+        .upload(filePath, file);
+
+    if (uploadError) {
+        console.error('Error uploading service image:', uploadError);
+        throw uploadError;
+    }
+
+    const { data } = supabase.storage.from('services').getPublicUrl(filePath);
+    return data.publicUrl;
+};
+
 // ============ ADMIN FUNCTIONS ============
 
 export interface AppointmentWithDetails extends Appointment {

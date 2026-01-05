@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Screen } from '../types';
 import AdminBottomNav from './AdminBottomNav';
-import { getServices, createService, deleteService, updateService, Service } from '../lib/database';
+import { getServices, createService, deleteService, updateService, uploadServiceImage, Service } from '../lib/database';
 
 interface AdminServicesProps {
   onNavigate: (s: Screen) => void;
@@ -12,8 +12,9 @@ const AdminServicesScreen: React.FC<AdminServicesProps> = ({ onNavigate }) => {
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const [newService, setNewService] = useState({ name: '', description: '', price: '', duration: '' });
+  const [newService, setNewService] = useState({ name: '', description: '', price: '', duration: '', image_url: '' });
   const [saving, setSaving] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [editingService, setEditingService] = useState<Service | null>(null);
   const [editForm, setEditForm] = useState({ name: '', description: '', price: '', duration: '', image_url: '' });
 
@@ -33,6 +34,28 @@ const AdminServicesScreen: React.FC<AdminServicesProps> = ({ onNavigate }) => {
     }
   };
 
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'new' | 'edit') => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingImage(true);
+    try {
+      const url = await uploadServiceImage(file);
+      if (url) {
+        if (type === 'new') {
+          setNewService(s => ({ ...s, image_url: url }));
+        } else {
+          setEditForm(s => ({ ...s, image_url: url }));
+        }
+      }
+    } catch (err) {
+      console.error('Error uploading image:', err);
+      alert('Erro ao fazer upload da imagem');
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
   const handleCreate = async () => {
     if (!newService.name.trim() || !newService.price) {
       alert('Nome e preço são obrigatórios');
@@ -46,10 +69,10 @@ const AdminServicesScreen: React.FC<AdminServicesProps> = ({ onNavigate }) => {
         description: newService.description.trim() || null,
         price: parseFloat(newService.price),
         duration: newService.duration.trim() || null,
-        image_url: null,
+        image_url: newService.image_url || null,
         rating: 5.0
       });
-      setNewService({ name: '', description: '', price: '', duration: '' });
+      setNewService({ name: '', description: '', price: '', duration: '', image_url: '' });
       setShowForm(false);
       loadServices();
     } catch (err) {
@@ -195,13 +218,13 @@ const AdminServicesScreen: React.FC<AdminServicesProps> = ({ onNavigate }) => {
                 <span className="material-symbols-outlined">close</span>
               </button>
             </div>
-            <div className="space-y-4">
+            <div className="space-y-3">
               <div>
                 <label className="text-xs font-semibold text-gray-500 ml-1">Nome *</label>
                 <input
                   value={newService.name}
                   onChange={(e) => setNewService(s => ({ ...s, name: e.target.value }))}
-                  className="w-full h-12 px-4 rounded-xl bg-gray-50 border border-gray-200 mt-1"
+                  className="w-full h-12 px-4 rounded-xl bg-gray-50 border border-gray-200 mt-1 shadow-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
                   placeholder="Ex: Banho Completo"
                 />
               </div>
@@ -210,7 +233,7 @@ const AdminServicesScreen: React.FC<AdminServicesProps> = ({ onNavigate }) => {
                 <input
                   value={newService.description}
                   onChange={(e) => setNewService(s => ({ ...s, description: e.target.value }))}
-                  className="w-full h-12 px-4 rounded-xl bg-gray-50 border border-gray-200 mt-1"
+                  className="w-full h-12 px-4 rounded-xl bg-gray-50 border border-gray-200 mt-1 shadow-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
                   placeholder="Descrição do serviço"
                 />
               </div>
@@ -221,7 +244,7 @@ const AdminServicesScreen: React.FC<AdminServicesProps> = ({ onNavigate }) => {
                     type="number"
                     value={newService.price}
                     onChange={(e) => setNewService(s => ({ ...s, price: e.target.value }))}
-                    className="w-full h-12 px-4 rounded-xl bg-gray-50 border border-gray-200 mt-1"
+                    className="w-full h-12 px-4 rounded-xl bg-gray-50 border border-gray-200 mt-1 shadow-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
                     placeholder="0.00"
                   />
                 </div>
@@ -230,15 +253,58 @@ const AdminServicesScreen: React.FC<AdminServicesProps> = ({ onNavigate }) => {
                   <input
                     value={newService.duration}
                     onChange={(e) => setNewService(s => ({ ...s, duration: e.target.value }))}
-                    className="w-full h-12 px-4 rounded-xl bg-gray-50 border border-gray-200 mt-1"
+                    className="w-full h-12 px-4 rounded-xl bg-gray-50 border border-gray-200 mt-1 shadow-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
                     placeholder="Ex: 1h30"
                   />
                 </div>
               </div>
+              <div>
+                <label className="text-xs font-semibold text-gray-500 ml-1">Imagem do Serviço</label>
+                <div className="mt-1 flex flex-col items-center gap-3 p-3 border-2 border-dashed border-gray-200 rounded-2xl bg-gray-50 transition-colors hover:bg-gray-100/50">
+                  {newService.image_url ? (
+                    <div className="relative w-full aspect-video rounded-xl overflow-hidden bg-white shadow-sm ring-1 ring-gray-100">
+                      <img src={newService.image_url} alt="Preview" className="w-full h-full object-cover" />
+                      <button
+                        onClick={() => setNewService(s => ({ ...s, image_url: '' }))}
+                        className="absolute top-2 right-2 bg-red-500/90 hover:bg-red-500 text-white p-1 rounded-full shadow-lg backdrop-blur-sm transition-all active:scale-95"
+                      >
+                        <span className="material-symbols-outlined text-sm">close</span>
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center py-1">
+                      <span className="material-symbols-outlined text-gray-400 text-3xl mb-1">add_a_photo</span>
+                      <p className="text-[10px] text-gray-500 font-medium font-sans">Selecione uma foto da galeria</p>
+                    </div>
+                  )}
+                  <label className="relative cursor-pointer w-full">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => handleImageUpload(e, 'new')}
+                      className="hidden"
+                      disabled={uploadingImage}
+                    />
+                    <div className={`flex items-center justify-center gap-2 h-11 px-4 rounded-xl font-bold transition-all shadow-sm ${uploadingImage ? 'bg-gray-100 text-gray-400' : 'bg-white border border-primary/20 text-primary hover:bg-primary/5 active:scale-[0.98]'}`}>
+                      {uploadingImage ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                          <span className="text-sm">Enviando...</span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="material-symbols-outlined text-[20px]">{newService.image_url ? 'sync' : 'photo_library'}</span>
+                          <span className="text-sm">{newService.image_url ? 'Trocar Foto' : 'Escolher Foto'}</span>
+                        </>
+                      )}
+                    </div>
+                  </label>
+                </div>
+              </div>
               <button
                 onClick={handleCreate}
-                disabled={saving}
-                className="w-full h-14 bg-primary text-white rounded-xl font-bold mt-4 disabled:opacity-70"
+                disabled={saving || uploadingImage}
+                className="w-full h-14 bg-primary text-white rounded-xl font-bold mt-2 shadow-lg shadow-primary/20 active:scale-[0.98] transition-all disabled:opacity-70"
               >
                 {saving ? 'Salvando...' : 'Criar Serviço'}
               </button>
@@ -298,18 +364,52 @@ const AdminServicesScreen: React.FC<AdminServicesProps> = ({ onNavigate }) => {
                 </div>
               </div>
               <div>
-                <label className="text-xs font-semibold text-gray-500 ml-1">URL da Imagem</label>
-                <input
-                  value={editForm.image_url}
-                  onChange={(e) => setEditForm(s => ({ ...s, image_url: e.target.value }))}
-                  className="w-full h-12 px-4 rounded-xl bg-gray-50 border border-gray-200 mt-1"
-                  placeholder="https://exemplo.com/imagem.jpg"
-                />
+                <label className="text-xs font-semibold text-gray-500 ml-1">Imagem do Serviço</label>
+                <div className="mt-1 flex flex-col items-center gap-3 p-3 border-2 border-dashed border-gray-200 rounded-2xl bg-gray-50 transition-colors hover:bg-gray-100/50">
+                  {editForm.image_url ? (
+                    <div className="relative w-full aspect-video rounded-xl overflow-hidden bg-white shadow-sm ring-1 ring-gray-100">
+                      <img src={editForm.image_url} alt="Preview" className="w-full h-full object-cover" />
+                      <button
+                        onClick={() => setEditForm(s => ({ ...s, image_url: '' }))}
+                        className="absolute top-2 right-2 bg-red-500/90 hover:bg-red-500 text-white p-1 rounded-full shadow-lg backdrop-blur-sm transition-all active:scale-95"
+                      >
+                        <span className="material-symbols-outlined text-sm">close</span>
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center py-1">
+                      <span className="material-symbols-outlined text-gray-400 text-3xl mb-1">add_a_photo</span>
+                      <p className="text-[10px] text-gray-500 font-medium font-sans">Selecione uma foto da galeria</p>
+                    </div>
+                  )}
+                  <label className="relative cursor-pointer w-full">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => handleImageUpload(e, 'edit')}
+                      className="hidden"
+                      disabled={uploadingImage}
+                    />
+                    <div className={`flex items-center justify-center gap-2 h-11 px-4 rounded-xl font-bold transition-all shadow-sm ${uploadingImage ? 'bg-gray-100 text-gray-400' : 'bg-white border border-primary/20 text-primary hover:bg-primary/5 active:scale-[0.98]'}`}>
+                      {uploadingImage ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                          <span className="text-sm">Enviando...</span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="material-symbols-outlined text-[20px]">{editForm.image_url ? 'sync' : 'photo_library'}</span>
+                          <span className="text-sm">{editForm.image_url ? 'Trocar Foto' : 'Escolher Foto'}</span>
+                        </>
+                      )}
+                    </div>
+                  </label>
+                </div>
               </div>
               <button
                 onClick={handleUpdate}
-                disabled={saving}
-                className="w-full h-14 bg-primary text-white rounded-xl font-bold mt-4 disabled:opacity-70"
+                disabled={saving || uploadingImage}
+                className="w-full h-14 bg-primary text-white rounded-xl font-bold mt-2 shadow-lg shadow-primary/20 active:scale-[0.98] transition-all disabled:opacity-70"
               >
                 {saving ? 'Salvando...' : 'Salvar Alterações'}
               </button>
