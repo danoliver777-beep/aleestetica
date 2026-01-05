@@ -250,7 +250,7 @@ const AdminServicesScreen: React.FC<AdminServicesProps> = ({ onNavigate }) => {
       {/* Edit Service Modal */}
       {editingService && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-end justify-center">
-          <div className="bg-white rounded-t-3xl w-full max-w-md p-6 animate-in slide-in-from-bottom">
+          <div className="bg-white rounded-t-3xl w-full max-w-md p-6 pb-8 mb-24 animate-in slide-in-from-bottom max-h-[70vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-bold">Editar Serviço</h3>
               <button onClick={() => setEditingService(null)} className="text-gray-400">
