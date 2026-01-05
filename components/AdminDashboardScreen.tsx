@@ -4,7 +4,7 @@ import { Screen } from '../types';
 import Header from './Header';
 import AdminBottomNav from './AdminBottomNav';
 import { useAuth } from '../context/AuthContext';
-import { getAdminStats, getAllAppointments, getFinancialStats, deleteAppointment, AppointmentWithDetails, FinancialStats } from '../lib/database';
+import { getAdminStats, getAllAppointments, getFinancialStats, getMonthlyRevenueHistory, deleteAppointment, AppointmentWithDetails, FinancialStats, MonthlyHistory } from '../lib/database';
 
 interface AdminDashboardProps {
   onNavigate: (s: Screen) => void;
@@ -18,6 +18,8 @@ const AdminDashboardScreen: React.FC<AdminDashboardProps> = ({ onNavigate }) => 
   const [selectedAppointment, setSelectedAppointment] = useState<AppointmentWithDetails | null>(null);
   const [showFinancialModal, setShowFinancialModal] = useState(false);
   const [financialData, setFinancialData] = useState<FinancialStats | null>(null);
+  const [financialView, setFinancialView] = useState<'summary' | 'details'>('summary');
+  const [monthlyHistory, setMonthlyHistory] = useState<MonthlyHistory[]>([]);
   const [financialLoading, setFinancialLoading] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -53,8 +55,13 @@ const AdminDashboardScreen: React.FC<AdminDashboardProps> = ({ onNavigate }) => 
   const loadFinancialData = async () => {
     setFinancialLoading(true);
     try {
-      const data = await getFinancialStats();
-      setFinancialData(data);
+      const [statsData, historyData] = await Promise.all([
+        getFinancialStats(),
+        getMonthlyRevenueHistory()
+      ]);
+      setFinancialData(statsData);
+      setMonthlyHistory(historyData);
+      setFinancialView('summary');
       setShowFinancialModal(true);
     } catch (err) {
       console.error('Error loading financial data:', err);
@@ -397,76 +404,140 @@ const AdminDashboardScreen: React.FC<AdminDashboardProps> = ({ onNavigate }) => 
               <button
                 onClick={() => setShowFinancialModal(false)}
                 className="absolute top-4 right-4 h-8 w-8 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white hover:bg-white/30 transition-colors"
+                title="Fechar"
               >
                 <span className="material-symbols-outlined text-sm">close</span>
               </button>
-              <div className="flex items-center gap-3">
-                <div className="h-12 w-12 rounded-full bg-white/20 flex items-center justify-center">
-                  <span className="material-symbols-outlined text-white text-2xl">analytics</span>
+
+              <button
+                onClick={() => setFinancialView(prev => prev === 'summary' ? 'details' : 'summary')}
+                className="absolute top-4 left-4 h-8 w-8 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white hover:bg-white/30 transition-colors"
+                title={financialView === 'summary' ? 'Ver Planilha' : 'Ver Resumo'}
+              >
+                <span className="material-symbols-outlined text-sm">
+                  {financialView === 'summary' ? 'table_chart' : 'analytics'}
+                </span>
+              </button>
+
+              <div className="flex flex-col items-center mt-2">
+                <div className="h-12 w-12 rounded-full bg-white/20 flex items-center justify-center mb-2">
+                  <span className="material-symbols-outlined text-white text-2xl">
+                    {financialView === 'summary' ? 'analytics' : 'table_chart'}
+                  </span>
                 </div>
-                <div>
-                  <h3 className="text-white text-xl font-bold">Painel Financeiro</h3>
+                <div className="text-center">
+                  <h3 className="text-white text-xl font-bold">
+                    {financialView === 'summary' ? 'Painel Financeiro' : 'Histórico Mensal'}
+                  </h3>
                   <p className="text-white/80 text-sm">
-                    {new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
+                    {financialView === 'summary'
+                      ? new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
+                      : `Resumo de ${new Date().getFullYear()}`
+                    }
                   </p>
                 </div>
               </div>
             </div>
 
-            {/* Main Revenue Card */}
-            <div className="p-6 space-y-6">
-              <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 rounded-2xl p-5">
-                <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Receita do Mês</p>
-                <p className="text-4xl font-extrabold text-gray-900 dark:text-white">
-                  <span className="text-xl">R$</span>{financialData.currentMonthRevenue.toFixed(2)}
-                </p>
-                {financialData.lastMonthRevenue > 0 && (
-                  <div className="flex items-center gap-2 mt-2">
-                    {financialData.currentMonthRevenue >= financialData.lastMonthRevenue ? (
-                      <>
-                        <span className="material-symbols-outlined text-green-500 text-sm">trending_up</span>
-                        <span className="text-xs font-medium text-green-600">
-                          +{(((financialData.currentMonthRevenue - financialData.lastMonthRevenue) / financialData.lastMonthRevenue) * 100).toFixed(1)}% vs mês anterior
-                        </span>
-                      </>
-                    ) : (
-                      <>
-                        <span className="material-symbols-outlined text-red-500 text-sm">trending_down</span>
-                        <span className="text-xs font-medium text-red-600">
-                          {(((financialData.currentMonthRevenue - financialData.lastMonthRevenue) / financialData.lastMonthRevenue) * 100).toFixed(1)}% vs mês anterior
-                        </span>
-                      </>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {/* Metrics Grid */}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="material-symbols-outlined text-blue-500 text-lg">calendar_month</span>
-                    <span className="text-xs font-medium text-blue-700 dark:text-blue-300">Agendamentos</span>
-                  </div>
-                  <p className="text-2xl font-bold text-blue-900 dark:text-blue-100">{financialData.currentMonthAppointments}</p>
+            {financialView === 'summary' ? (
+              /* Main Revenue Card & Summary */
+              <div className="p-6 space-y-6">
+                <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 rounded-2xl p-5">
+                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Receita do Mês</p>
+                  <p className="text-4xl font-extrabold text-gray-900 dark:text-white">
+                    <span className="text-xl">R$</span>{financialData.currentMonthRevenue.toFixed(2)}
+                  </p>
+                  {financialData.lastMonthRevenue > 0 && (
+                    <div className="flex items-center gap-2 mt-2">
+                      {financialData.currentMonthRevenue >= financialData.lastMonthRevenue ? (
+                        <>
+                          <span className="material-symbols-outlined text-green-500 text-sm">trending_up</span>
+                          <span className="text-xs font-medium text-green-600">
+                            +{(((financialData.currentMonthRevenue - financialData.lastMonthRevenue) / financialData.lastMonthRevenue) * 100).toFixed(1)}% vs mês anterior
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="material-symbols-outlined text-red-500 text-sm">trending_down</span>
+                          <span className="text-xs font-medium text-red-600">
+                            {(((financialData.currentMonthRevenue - financialData.lastMonthRevenue) / financialData.lastMonthRevenue) * 100).toFixed(1)}% vs mês anterior
+                          </span>
+                        </>
+                      )}
+                    </div>
+                  )}
                 </div>
-                <div className="bg-purple-50 dark:bg-purple-900/20 rounded-xl p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="material-symbols-outlined text-purple-500 text-lg">task_alt</span>
-                    <span className="text-xs font-medium text-purple-700 dark:text-purple-300">Concluídos</span>
-                  </div>
-                  <p className="text-2xl font-bold text-purple-900 dark:text-purple-100">{financialData.completedAppointments}</p>
-                </div>
-              </div>
 
-              {/* Close Button */}
-              <button
-                onClick={() => setShowFinancialModal(false)}
-                className="w-full h-12 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-bold text-sm flex items-center justify-center gap-2 hover:bg-gray-200 dark:hover:bg-gray-700 active:scale-95 transition-all"
-              >
-                Fechar
-              </button>
-            </div>
+                {/* Metrics Grid */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="material-symbols-outlined text-blue-500 text-lg">calendar_month</span>
+                      <span className="text-xs font-medium text-blue-700 dark:text-blue-300">Agendamentos</span>
+                    </div>
+                    <p className="text-2xl font-bold text-blue-900 dark:text-blue-100">{financialData.currentMonthAppointments}</p>
+                  </div>
+                  <div className="bg-purple-50 dark:bg-purple-900/20 rounded-xl p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="material-symbols-outlined text-purple-500 text-lg">task_alt</span>
+                      <span className="text-xs font-medium text-purple-700 dark:text-purple-300">Concluídos</span>
+                    </div>
+                    <p className="text-2xl font-bold text-purple-900 dark:text-purple-100">{financialData.completedAppointments}</p>
+                  </div>
+                </div>
+
+                {/* Close Button */}
+                <button
+                  onClick={() => setShowFinancialModal(false)}
+                  className="w-full h-12 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-bold text-sm flex items-center justify-center gap-2 hover:bg-gray-200 dark:hover:bg-gray-700 active:scale-95 transition-all"
+                >
+                  Fechar
+                </button>
+              </div>
+            ) : (
+              /* Detailed Spreadsheet View */
+              <div className="p-4 space-y-4">
+                <div className="overflow-x-auto rounded-xl border border-gray-100 dark:border-gray-800">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="bg-gray-50 dark:bg-gray-800/50">
+                        <th className="px-3 py-3 text-[10px] font-bold text-gray-500 uppercase tracking-wider">Mês</th>
+                        <th className="px-3 py-3 text-[10px] font-bold text-gray-500 uppercase tracking-wider text-right">Faturamento</th>
+                        <th className="px-3 py-3 text-[10px] font-bold text-gray-500 uppercase tracking-wider text-center">Agend.</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-50 dark:divide-gray-800">
+                      {monthlyHistory.map((item) => (
+                        <tr key={item.month} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
+                          <td className="px-3 py-4">
+                            <p className="text-sm font-bold text-gray-900 dark:text-white capitalize">{item.monthName}</p>
+                            <p className="text-[10px] text-gray-400">{item.completed} concluídos</p>
+                          </td>
+                          <td className="px-3 py-4 text-right">
+                            <p className="text-sm font-bold text-green-600 dark:text-green-500">
+                              <span className="text-[10px] mr-0.5">R$</span>{item.revenue.toFixed(2)}
+                            </p>
+                          </td>
+                          <td className="px-3 py-4 text-center">
+                            <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-xs font-bold">
+                              {item.count}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                <button
+                  onClick={() => setFinancialView('summary')}
+                  className="w-full h-12 rounded-xl bg-primary/10 text-primary font-bold text-sm flex items-center justify-center gap-2 hover:bg-primary/20 active:scale-95 transition-all"
+                >
+                  <span className="material-symbols-outlined text-sm">arrow_back</span>
+                  Voltar ao Resumo
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}

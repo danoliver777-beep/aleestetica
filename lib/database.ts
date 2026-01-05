@@ -444,6 +444,14 @@ export interface FinancialStats {
     topServices: { name: string; count: number; revenue: number }[];
 }
 
+export interface MonthlyHistory {
+    month: string;
+    monthName: string;
+    revenue: number;
+    count: number;
+    completed: number;
+}
+
 export const getFinancialStats = async (): Promise<FinancialStats> => {
     const now = new Date();
     const currentYear = now.getFullYear();
@@ -523,6 +531,61 @@ export const getFinancialStats = async (): Promise<FinancialStats> => {
         averageTicket,
         topServices
     };
+};
+
+export const getMonthlyRevenueHistory = async (): Promise<MonthlyHistory[]> => {
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    
+    // Fetch all appointments for the current year
+    const yearStart = `${currentYear}-01-01`;
+    const yearEnd = `${currentYear}-12-31`;
+
+    const { data, error } = await supabase
+        .from('appointments')
+        .select('id, status, scheduled_date, service:services(price)')
+        .gte('scheduled_date', yearStart)
+        .lte('scheduled_date', yearEnd);
+
+    if (error) {
+        console.error('Error fetching monthly history:', error);
+        return [];
+    }
+
+    const months: MonthlyHistory[] = [];
+    const monthNames = [
+        'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+        'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+    ];
+
+    // Initialize all months of the year
+    for (let i = 0; i < 12; i++) {
+        months.push({
+            month: `${currentYear}-${(i + 1).toString().padStart(2, '0')}`,
+            monthName: monthNames[i],
+            revenue: 0,
+            count: 0,
+            completed: 0
+        });
+    }
+
+    // Aggregate data
+    data?.forEach(app => {
+        const date = new Date(app.scheduled_date + 'T00:00:00');
+        const monthIndex = date.getMonth();
+        const svc = app.service as any;
+        const price = svc?.price || 0;
+
+        months[monthIndex].count += 1;
+        months[monthIndex].revenue += price;
+        if (app.status === 'COMPLETED') {
+            months[monthIndex].completed += 1;
+        }
+    });
+
+    // Return only months that have passed or have data
+    const currentMonth = now.getMonth();
+    return months.slice(0, currentMonth + 1).reverse();
 };
 
 // Create a new service (admin only)
