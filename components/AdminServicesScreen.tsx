@@ -12,6 +12,7 @@ const AdminServicesScreen: React.FC<AdminServicesProps> = ({ onNavigate }) => {
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [expandedDescriptions, setExpandedDescriptions] = useState<Set<string>>(new Set());
   const [newService, setNewService] = useState({ name: '', description: '', price: '', duration: '', image_url: '' });
   const [saving, setSaving] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -132,6 +133,19 @@ const AdminServicesScreen: React.FC<AdminServicesProps> = ({ onNavigate }) => {
     }
   };
 
+  const toggleDescription = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setExpandedDescriptions(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(id)) {
+        newSet.delete(id);
+      } else {
+        newSet.add(id);
+      }
+      return newSet;
+    });
+  };
+
   return (
     <div className="flex flex-col min-h-screen pb-28 animate-in slide-in-from-right duration-300">
       <header className="sticky top-0 z-40 bg-surface-light/95 dark:bg-background-dark/95 backdrop-blur-md border-b border-gray-100 transition-colors">
@@ -193,7 +207,19 @@ const AdminServicesScreen: React.FC<AdminServicesProps> = ({ onNavigate }) => {
                       </button>
                     </div>
                   </div>
-                  <p className="text-gray-500 text-xs font-normal leading-relaxed line-clamp-1 mt-1">{service.description || 'Sem descrição'}</p>
+                  <div className="relative">
+                    <p className={`text-gray-500 text-xs font-normal leading-relaxed mt-1 ${expandedDescriptions.has(service.id) ? '' : 'line-clamp-1'}`}>
+                      {service.description || 'Sem descrição'}
+                    </p>
+                    {service.description && service.description.length > 50 && (
+                      <button
+                        onClick={(e) => toggleDescription(service.id, e)}
+                        className="text-[10px] text-primary font-bold mt-0.5 hover:underline focus:outline-none"
+                      >
+                        {expandedDescriptions.has(service.id) ? 'Ler menos' : 'Ler mais'}
+                      </button>
+                    )}
+                  </div>
                   <div className="flex items-center gap-3 mt-auto pt-2">
                     <div className="flex items-center gap-1 bg-gray-100 px-2 py-1 rounded-md">
                       <span className="material-symbols-outlined text-gray-500 text-[14px]">schedule</span>
