@@ -258,10 +258,7 @@ const ClientHomeScreen: React.FC<ClientHomeProps> = ({ onNavigate, onSelectServi
                       <div>
                         <div className="flex justify-between items-start">
                           <h3 className="text-lg font-bold leading-tight">{service.name}</h3>
-                          <div className="flex items-center gap-1 text-orange-400">
-                            <span className="material-symbols-outlined text-[16px] filled">star</span>
-                            <span className="text-xs font-bold text-gray-900 dark:text-gray-200">{service.rating}</span>
-                          </div>
+
                         </div>
                         <div className="relative">
                           <p className={`text-gray-500 dark:text-gray-400 text-sm mt-1 ${expandedDescriptions.has(service.id) ? '' : 'line-clamp-2'}`}>
