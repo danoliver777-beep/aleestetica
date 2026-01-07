@@ -28,6 +28,7 @@ const ClientHomeScreen: React.FC<ClientHomeProps> = ({ onNavigate, onSelectServi
   const [loading, setLoading] = useState(true);
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [expandedDescriptions, setExpandedDescriptions] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (user) loadData();
@@ -115,6 +116,19 @@ const ClientHomeScreen: React.FC<ClientHomeProps> = ({ onNavigate, onSelectServi
     } finally {
       setLoading(false);
     }
+  };
+
+  const toggleDescription = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setExpandedDescriptions(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(id)) {
+        newSet.delete(id);
+      } else {
+        newSet.add(id);
+      }
+      return newSet;
+    });
   };
 
   const displayName = profile?.full_name || user?.email?.split('@')[0] || 'Usuário';
@@ -249,7 +263,19 @@ const ClientHomeScreen: React.FC<ClientHomeProps> = ({ onNavigate, onSelectServi
                             <span className="text-xs font-bold text-gray-900 dark:text-gray-200">{service.rating}</span>
                           </div>
                         </div>
-                        <p className="text-gray-500 dark:text-gray-400 text-sm mt-1 line-clamp-2">{service.description}</p>
+                        <div className="relative">
+                          <p className={`text-gray-500 dark:text-gray-400 text-sm mt-1 ${expandedDescriptions.has(service.id) ? '' : 'line-clamp-2'}`}>
+                            {service.description}
+                          </p>
+                          {service.description && service.description.length > 50 && (
+                            <button
+                              onClick={(e) => toggleDescription(service.id, e)}
+                              className="text-xs text-primary font-bold mt-1 hover:underline focus:outline-none"
+                            >
+                              {expandedDescriptions.has(service.id) ? 'Ler menos' : 'Ler mais'}
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
