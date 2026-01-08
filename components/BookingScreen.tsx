@@ -179,7 +179,7 @@ const BookingScreen: React.FC<BookingProps> = ({ service: initialService, onBack
             <span className="material-symbols-outlined text-primary filled">content_cut</span>
             Serviço
           </h2>
-          <div className="flex gap-3 overflow-x-auto pb-2 no-scrollbar">
+          <div className="flex flex-col gap-3">
             {services.flatMap(svc => [
               { id: svc.id, name: svc.name, price: svc.price, subtype: null as string | null },
               ...(svc.subtypes || []).map(st => ({ id: svc.id, name: `${svc.name} (${st.name})`, price: st.price, subtype: st.name }))
@@ -190,7 +190,7 @@ const BookingScreen: React.FC<BookingProps> = ({ service: initialService, onBack
                   key={`${option.id}-${idx}`}
                   disabled={isServiceConfirmed}
                   onClick={() => toggleService(option.id, option.name, option.price, option.subtype)}
-                  className={`flex flex-col shrink-0 min-w-[140px] p-3 rounded-xl transition-all relative ${isSelected ? 'bg-primary text-white shadow-md shadow-primary/20 ring-2 ring-primary ring-offset-2' : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700'}`}
+                  className={`flex flex-col w-full p-3 rounded-xl transition-all relative ${isSelected ? 'bg-primary text-white shadow-md shadow-primary/20 ring-2 ring-primary ring-offset-2' : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700'}`}
                 >
                   {isSelected && (
                     <span className="absolute top-1 right-1 material-symbols-outlined text-xs bg-white text-primary rounded-full p-0.5">check</span>
