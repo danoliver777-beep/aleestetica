@@ -273,6 +273,18 @@ const ClientHomeScreen: React.FC<ClientHomeProps> = ({ onNavigate, onSelectServi
                             </button>
                           )}
                         </div>
+
+                        {/* Display Subtypes if any */}
+                        {service.subtypes && service.subtypes.length > 0 && (
+                          <div className="mt-3 flex flex-wrap gap-2">
+                            {service.subtypes.map((st, i) => (
+                              <div key={i} className="flex items-center gap-1.5 bg-gray-50 dark:bg-gray-800/50 px-2 py-1 rounded-md border border-gray-100 dark:border-gray-700">
+                                <span className="text-[10px] font-medium text-gray-600 dark:text-gray-400">{st.name}</span>
+                                <span className="text-[10px] font-bold text-primary">R$ {st.price.toFixed(2)}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>

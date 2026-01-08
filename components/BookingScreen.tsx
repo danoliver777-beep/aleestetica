@@ -19,6 +19,8 @@ const BookingScreen: React.FC<BookingProps> = ({ service: initialService, onBack
   const [selectedTime, setSelectedTime] = useState('14:00');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [selectedSubtypeName, setSelectedSubtypeName] = useState<string | null>(null);
+  const [selectedExtras, setSelectedExtras] = useState<string[]>([]);
 
   // Horários de funcionamento: 07:00-12:00 e 13:00-19:00 (intervalo de almoço 12-13)
   const times = ['07:00', '08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00'];
@@ -88,12 +90,24 @@ const BookingScreen: React.FC<BookingProps> = ({ service: initialService, onBack
         return;
       }
 
+      const selectedService = services.find(s => s.id === selectedServiceId);
+      const selectedSubtype = selectedService?.subtypes?.find(st => st.name === selectedSubtypeName);
+
+      let noteContent = '';
+      if (selectedSubtypeName) {
+        noteContent += `Subtipo: ${selectedSubtypeName}\n`;
+      }
+      if (selectedExtras.length > 0) {
+        noteContent += `Extras: ${selectedExtras.join(', ')}\n`;
+      }
+
       await createAppointment({
         user_id: user.id,
         pet_id: selectedPetId,
         service_id: selectedServiceId,
         scheduled_date: selectedDate,
-        scheduled_time: selectedTime
+        scheduled_time: selectedTime,
+        notes: noteContent.trim() || undefined
       });
       alert('Agendamento criado com sucesso!');
       onSuccess();
@@ -106,6 +120,25 @@ const BookingScreen: React.FC<BookingProps> = ({ service: initialService, onBack
   };
 
   const selectedService = services.find(s => s.id === selectedServiceId);
+  const selectedSubtype = selectedService?.subtypes?.find(st => st.name === selectedSubtypeName);
+
+  const calculateTotal = () => {
+    if (!selectedService) return 0;
+    let total = selectedSubtypeName && selectedSubtype ? selectedSubtype.price : selectedService.price;
+
+    selectedExtras.forEach(extraName => {
+      const extra = selectedService.extras?.find(e => e.name === extraName);
+      if (extra) total += extra.price;
+    });
+
+    return total;
+  };
+
+  const toggleExtra = (name: string) => {
+    setSelectedExtras(prev =>
+      prev.includes(name) ? prev.filter(e => e !== name) : [...prev, name]
+    );
+  };
 
   if (loading) {
     return (
@@ -145,6 +178,62 @@ const BookingScreen: React.FC<BookingProps> = ({ service: initialService, onBack
             ))}
           </div>
         </section>
+
+        {/* Subtype Selection */}
+        {selectedService && selectedService.subtypes && selectedService.subtypes.length > 0 && (
+          <section className="mb-6">
+            <h2 className="text-lg font-bold mb-3 flex items-center gap-2">
+              <span className="material-symbols-outlined text-primary filled">style</span>
+              Escolha uma variação
+            </h2>
+            <div className="flex gap-3 overflow-x-auto pb-2 no-scrollbar">
+              <button
+                onClick={() => setSelectedSubtypeName(null)}
+                className={`flex flex-col shrink-0 w-32 p-3 rounded-xl transition-all ${!selectedSubtypeName ? 'bg-primary text-white shadow-md shadow-primary/20' : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700'}`}
+              >
+                <span className="text-sm font-bold truncate">Padrão</span>
+                <span className={`text-xs ${!selectedSubtypeName ? 'text-white/80' : 'text-gray-500'}`}>R$ {selectedService.price.toFixed(2)}</span>
+              </button>
+              {selectedService.subtypes.map((st, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setSelectedSubtypeName(st.name)}
+                  className={`flex flex-col shrink-0 w-32 p-3 rounded-xl transition-all ${selectedSubtypeName === st.name ? 'bg-primary text-white shadow-md shadow-primary/20' : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700'}`}
+                >
+                  <span className="text-sm font-bold truncate">{st.name}</span>
+                  <span className={`text-xs ${selectedSubtypeName === st.name ? 'text-white/80' : 'text-gray-500'}`}>R$ {st.price.toFixed(2)}</span>
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Extras Selection */}
+        {selectedService && selectedService.extras && selectedService.extras.length > 0 && (
+          <section className="mb-6">
+            <h2 className="text-lg font-bold mb-3 flex items-center gap-2">
+              <span className="material-symbols-outlined text-primary filled">add_circle</span>
+              Adicionais (Extras)
+            </h2>
+            <div className="grid grid-cols-1 gap-2">
+              {selectedService.extras.map((extra, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => toggleExtra(extra.name)}
+                  className={`flex items-center justify-between p-3 rounded-xl border transition-all ${selectedExtras.includes(extra.name) ? 'bg-blue-50 border-primary dark:bg-blue-900/20' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700'}`}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className={`material-symbols-outlined ${selectedExtras.includes(extra.name) ? 'text-primary' : 'text-gray-300'}`}>
+                      {selectedExtras.includes(extra.name) ? 'check_box' : 'check_box_outline_blank'}
+                    </span>
+                    <span className="text-sm font-medium">{extra.name}</span>
+                  </div>
+                  <span className="text-xs font-bold text-primary">+ R$ {extra.price.toFixed(2)}</span>
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Pet Selection */}
         <section className="mb-6">
@@ -212,7 +301,7 @@ const BookingScreen: React.FC<BookingProps> = ({ service: initialService, onBack
         <div className="flex items-center justify-between mb-4 px-1">
           <div className="flex flex-col">
             <span className="text-[10px] text-gray-500 font-medium uppercase tracking-wide">Total a pagar</span>
-            <span className="text-xl font-bold">R$ {selectedService?.price.toFixed(2) || '0.00'}</span>
+            <span className="text-xl font-bold">R$ {calculateTotal().toFixed(2)}</span>
           </div>
           <div className="text-right">
             <span className="text-[10px] text-gray-500 block">Agendado para</span>
