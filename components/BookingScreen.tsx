@@ -14,12 +14,14 @@ const BookingScreen: React.FC<BookingProps> = ({ service: initialService, onBack
   const [pets, setPets] = useState<Pet[]>([]);
   const [services, setServices] = useState<Service[]>([]);
   const [selectedPetId, setSelectedPetId] = useState<string | null>(null);
-  const [selectedServiceId, setSelectedServiceId] = useState<string | null>(initialService?.id || null);
+  const [selectedServices, setSelectedServices] = useState<{ serviceId: string; name: string; price: number; subtypeName: string | null }[]>(
+    initialService ? [{ serviceId: initialService.id, name: initialService.name, price: initialService.price, subtypeName: null }] : []
+  );
+  const [isServiceConfirmed, setIsServiceConfirmed] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [selectedTime, setSelectedTime] = useState('14:00');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [selectedSubtypeName, setSelectedSubtypeName] = useState<string | null>(null);
   const [selectedExtras, setSelectedExtras] = useState<string[]>([]);
 
   // Horários de funcionamento: 07:00-12:00 e 13:00-19:00 (intervalo de almoço 12-13)
@@ -49,8 +51,8 @@ const BookingScreen: React.FC<BookingProps> = ({ service: initialService, onBack
       setPets(petsData);
       setServices(servicesData);
       if (petsData.length > 0) setSelectedPetId(petsData[0].id);
-      if (!selectedServiceId && servicesData.length > 0) {
-        setSelectedServiceId(servicesData[0].id);
+      if (selectedServices.length === 0 && servicesData.length > 0) {
+        setSelectedServices([{ serviceId: servicesData[0].id, name: servicesData[0].name, price: servicesData[0].price, subtypeName: null }]);
       }
       // Set default date to tomorrow
       const tomorrow = new Date();
@@ -64,7 +66,7 @@ const BookingScreen: React.FC<BookingProps> = ({ service: initialService, onBack
   };
 
   const handleConfirm = async () => {
-    if (!user || !selectedPetId || !selectedServiceId || !selectedDate || !selectedTime) {
+    if (!user || !selectedPetId || selectedServices.length === 0 || !selectedDate || !selectedTime) {
       alert('Por favor, preencha todos os campos');
       return;
     }
@@ -90,21 +92,19 @@ const BookingScreen: React.FC<BookingProps> = ({ service: initialService, onBack
         return;
       }
 
-      const selectedService = services.find(s => s.id === selectedServiceId);
-      const selectedSubtype = selectedService?.subtypes?.find(st => st.name === selectedSubtypeName);
+      let noteContent = 'Serviços Selecionados:\n';
+      selectedServices.forEach(s => {
+        noteContent += `- ${s.name}${s.subtypeName ? ` (${s.subtypeName})` : ''}: R$ ${s.price.toFixed(2)}\n`;
+      });
 
-      let noteContent = '';
-      if (selectedSubtypeName) {
-        noteContent += `Subtipo: ${selectedSubtypeName}\n`;
-      }
       if (selectedExtras.length > 0) {
-        noteContent += `Extras: ${selectedExtras.join(', ')}\n`;
+        noteContent += `\nAdicionais (Extras): ${selectedExtras.join(', ')}\n`;
       }
 
       await createAppointment({
         user_id: user.id,
         pet_id: selectedPetId,
-        service_id: selectedServiceId,
+        service_id: selectedServices[0].serviceId, // Usamos o primeiro como ID principal
         scheduled_date: selectedDate,
         scheduled_time: selectedTime,
         notes: noteContent.trim() || undefined
@@ -119,19 +119,33 @@ const BookingScreen: React.FC<BookingProps> = ({ service: initialService, onBack
     }
   };
 
-  const selectedService = services.find(s => s.id === selectedServiceId);
-  const selectedSubtype = selectedService?.subtypes?.find(st => st.name === selectedSubtypeName);
-
   const calculateTotal = () => {
-    if (!selectedService) return 0;
-    let total = selectedSubtypeName && selectedSubtype ? selectedSubtype.price : selectedService.price;
+    let total = selectedServices.reduce((sum, s) => sum + s.price, 0);
 
     selectedExtras.forEach(extraName => {
-      const extra = selectedService.extras?.find(e => e.name === extraName);
-      if (extra) total += extra.price;
+      // Procuramos o extra em todos os serviços selecionados
+      for (const selSvc of selectedServices) {
+        const fullSvc = services.find(s => s.id === selSvc.serviceId);
+        const extra = fullSvc?.extras?.find(e => e.name === extraName);
+        if (extra) {
+          total += extra.price;
+          break; // Extra adicionado uma vez
+        }
+      }
     });
 
     return total;
+  };
+
+  const toggleService = (svcId: string, name: string, price: number, subtypeName: string | null) => {
+    setSelectedServices(prev => {
+      const isAlreadySelected = prev.find(s => s.serviceId === svcId && s.subtypeName === subtypeName);
+      if (isAlreadySelected) {
+        return prev.filter(s => !(s.serviceId === svcId && s.subtypeName === subtypeName));
+      } else {
+        return [...prev, { serviceId: svcId, name, price, subtypeName }];
+      }
+    });
   };
 
   const toggleExtra = (name: string) => {
@@ -169,108 +183,141 @@ const BookingScreen: React.FC<BookingProps> = ({ service: initialService, onBack
             {services.flatMap(svc => [
               { id: svc.id, name: svc.name, price: svc.price, subtype: null as string | null },
               ...(svc.subtypes || []).map(st => ({ id: svc.id, name: `${svc.name} (${st.name})`, price: st.price, subtype: st.name }))
-            ]).map((option, idx) => (
-              <button
-                key={`${option.id}-${idx}`}
-                onClick={() => {
-                  setSelectedServiceId(option.id);
-                  setSelectedSubtypeName(option.subtype);
-                }}
-                className={`flex flex-col shrink-0 w-32 p-3 rounded-xl transition-all ${selectedServiceId === option.id && selectedSubtypeName === option.subtype ? 'bg-primary text-white shadow-md shadow-primary/20' : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700'}`}
-              >
-                <span className="text-sm font-bold truncate">{option.name}</span>
-                <span className={`text-xs ${selectedServiceId === option.id && selectedSubtypeName === option.subtype ? 'text-white/80' : 'text-gray-500'}`}>R$ {option.price.toFixed(2)}</span>
-              </button>
-            ))}
+            ]).map((option, idx) => {
+              const isSelected = selectedServices.some(s => s.serviceId === option.id && s.subtypeName === option.subtype);
+              return (
+                <button
+                  key={`${option.id}-${idx}`}
+                  disabled={isServiceConfirmed}
+                  onClick={() => toggleService(option.id, option.name, option.price, option.subtype)}
+                  className={`flex flex-col shrink-0 w-32 p-3 rounded-xl transition-all relative ${isSelected ? 'bg-primary text-white shadow-md shadow-primary/20 ring-2 ring-primary ring-offset-2' : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700'}`}
+                >
+                  {isSelected && (
+                    <span className="absolute top-1 right-1 material-symbols-outlined text-xs bg-white text-primary rounded-full p-0.5">check</span>
+                  )}
+                  <span className="text-sm font-bold truncate">{option.name}</span>
+                  <span className={`text-xs ${isSelected ? 'text-white/80' : 'text-gray-500'}`}>R$ {option.price.toFixed(2)}</span>
+                </button>
+              );
+            })}
           </div>
+
+          {!isServiceConfirmed && selectedServices.length > 0 && (
+            <button
+              onClick={() => setIsServiceConfirmed(true)}
+              className="w-full mt-4 bg-green-500 hover:bg-green-600 text-white font-bold py-3 rounded-xl shadow-lg shadow-green-200 flex items-center justify-center gap-2 animate-in fade-in slide-in-from-top-2"
+            >
+              <span className="material-symbols-outlined">check_circle</span>
+              Ok, escolher pet e data
+            </button>
+          )}
+
+          {isServiceConfirmed && (
+            <button
+              onClick={() => setIsServiceConfirmed(false)}
+              className="mt-2 text-primary text-xs font-bold flex items-center gap-1"
+            >
+              <span className="material-symbols-outlined text-xs">edit</span>
+              Alterar serviços
+            </button>
+          )}
         </section>
 
-        {/* Extras Selection */}
-        {selectedService && selectedService.extras && selectedService.extras.length > 0 && (
+        <section className={`transition-all duration-300 ${!isServiceConfirmed ? 'opacity-30 pointer-events-none grayscale' : ''}`}>
+
+          {/* Extras Selection */}
+          {selectedServices.length > 0 && (
+            <section className={`mb-6 transition-all duration-300 ${!isServiceConfirmed ? 'opacity-30 pointer-events-none grayscale' : ''}`}>
+              <h2 className="text-lg font-bold mb-3 flex items-center gap-2">
+                <span className="material-symbols-outlined text-primary filled">add_circle</span>
+                Adicionais (Extras)
+              </h2>
+              <div className="grid grid-cols-1 gap-2">
+                {/* Mostramos extras de todos os serviços selecionados (evitando duplicados por nome) */}
+                {Array.from(new Set(
+                  selectedServices.flatMap(selSvc => {
+                    const fullSvc = services.find(s => s.id === selSvc.serviceId);
+                    return fullSvc?.extras || [];
+                  }).map(e => JSON.stringify(e))
+                )).map((eStr: any) => JSON.parse(eStr) as { name: string, price: number }).map((extra, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => toggleExtra(extra.name)}
+                    className={`flex items-center justify-between p-3 rounded-xl border transition-all ${selectedExtras.includes(extra.name) ? 'bg-blue-50 border-primary dark:bg-blue-900/20' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700'}`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className={`material-symbols-outlined ${selectedExtras.includes(extra.name) ? 'text-primary' : 'text-gray-300'}`}>
+                        {selectedExtras.includes(extra.name) ? 'check_box' : 'check_box_outline_blank'}
+                      </span>
+                      <span className="text-sm font-medium">{extra.name}</span>
+                    </div>
+                    <span className="text-xs font-bold text-primary">+ R$ {extra.price.toFixed(2)}</span>
+                  </button>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* Pet Selection */}
           <section className="mb-6">
             <h2 className="text-lg font-bold mb-3 flex items-center gap-2">
-              <span className="material-symbols-outlined text-primary filled">add_circle</span>
-              Adicionais (Extras)
+              <span className="material-symbols-outlined text-primary filled">pets</span>
+              Quem será atendido?
             </h2>
-            <div className="grid grid-cols-1 gap-2">
-              {selectedService.extras.map((extra, idx) => (
+            {pets.length === 0 ? (
+              <div className="text-center py-4 text-gray-400 bg-gray-50 rounded-xl">
+                <p className="text-sm">Cadastre um pet primeiro</p>
+              </div>
+            ) : (
+              <div className="flex gap-3 overflow-x-auto pb-2 no-scrollbar">
+                {pets.map(pet => (
+                  <button
+                    key={pet.id}
+                    onClick={() => setSelectedPetId(pet.id)}
+                    className={`flex h-10 shrink-0 items-center gap-2 rounded-full px-5 transition-all ${selectedPetId === pet.id ? 'bg-primary text-white shadow-md shadow-primary/20' : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700'}`}
+                  >
+                    {selectedPetId === pet.id && <span className="material-symbols-outlined text-[20px]">check</span>}
+                    <span className="text-sm font-semibold">{pet.name}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </section>
+
+          {/* Date Selection */}
+          <section className="mb-6">
+            <h2 className="text-lg font-bold mb-3">Selecione a data</h2>
+            <input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              min={new Date().toISOString().split('T')[0]}
+              className={`w-full h-14 px-4 rounded-xl bg-white dark:bg-gray-800 border focus:ring-2 focus:ring-primary ${!isDateAllowed(selectedDate) && selectedDate ? 'border-red-400' : 'border-gray-200'}`}
+            />
+            {selectedDate && !isDateAllowed(selectedDate) && (
+              <p className="text-red-500 text-xs mt-2 flex items-center gap-1">
+                <span className="material-symbols-outlined text-sm">warning</span>
+                Funcionamos de Terça a Sábado. Selecione outro dia.
+              </p>
+            )}
+            <p className="text-gray-400 text-xs mt-2">Horário: Ter-Sáb, 07h-12h e 13h-19h</p>
+          </section>
+
+          {/* Time Selection */}
+          <section className="mb-4">
+            <h2 className="text-lg font-bold mb-3">Horários disponíveis</h2>
+            <div className="grid grid-cols-3 gap-3">
+              {times.map(time => (
                 <button
-                  key={idx}
-                  onClick={() => toggleExtra(extra.name)}
-                  className={`flex items-center justify-between p-3 rounded-xl border transition-all ${selectedExtras.includes(extra.name) ? 'bg-blue-50 border-primary dark:bg-blue-900/20' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700'}`}
+                  key={time}
+                  onClick={() => setSelectedTime(time)}
+                  className={`py-3 rounded-xl font-semibold text-sm transition-all border ${selectedTime === time ? 'bg-primary text-white shadow-md shadow-primary/25 ring-2 ring-primary ring-offset-2' : 'bg-white dark:bg-gray-800 border-gray-200 text-gray-600 hover:border-primary hover:text-primary'}`}
                 >
-                  <div className="flex items-center gap-2">
-                    <span className={`material-symbols-outlined ${selectedExtras.includes(extra.name) ? 'text-primary' : 'text-gray-300'}`}>
-                      {selectedExtras.includes(extra.name) ? 'check_box' : 'check_box_outline_blank'}
-                    </span>
-                    <span className="text-sm font-medium">{extra.name}</span>
-                  </div>
-                  <span className="text-xs font-bold text-primary">+ R$ {extra.price.toFixed(2)}</span>
+                  {time}
                 </button>
               ))}
             </div>
           </section>
-        )}
-
-        {/* Pet Selection */}
-        <section className="mb-6">
-          <h2 className="text-lg font-bold mb-3 flex items-center gap-2">
-            <span className="material-symbols-outlined text-primary filled">pets</span>
-            Quem será atendido?
-          </h2>
-          {pets.length === 0 ? (
-            <div className="text-center py-4 text-gray-400 bg-gray-50 rounded-xl">
-              <p className="text-sm">Cadastre um pet primeiro</p>
-            </div>
-          ) : (
-            <div className="flex gap-3 overflow-x-auto pb-2 no-scrollbar">
-              {pets.map(pet => (
-                <button
-                  key={pet.id}
-                  onClick={() => setSelectedPetId(pet.id)}
-                  className={`flex h-10 shrink-0 items-center gap-2 rounded-full px-5 transition-all ${selectedPetId === pet.id ? 'bg-primary text-white shadow-md shadow-primary/20' : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700'}`}
-                >
-                  {selectedPetId === pet.id && <span className="material-symbols-outlined text-[20px]">check</span>}
-                  <span className="text-sm font-semibold">{pet.name}</span>
-                </button>
-              ))}
-            </div>
-          )}
-        </section>
-
-        {/* Date Selection */}
-        <section className="mb-6">
-          <h2 className="text-lg font-bold mb-3">Selecione a data</h2>
-          <input
-            type="date"
-            value={selectedDate}
-            onChange={(e) => setSelectedDate(e.target.value)}
-            min={new Date().toISOString().split('T')[0]}
-            className={`w-full h-14 px-4 rounded-xl bg-white dark:bg-gray-800 border focus:ring-2 focus:ring-primary ${!isDateAllowed(selectedDate) && selectedDate ? 'border-red-400' : 'border-gray-200'}`}
-          />
-          {selectedDate && !isDateAllowed(selectedDate) && (
-            <p className="text-red-500 text-xs mt-2 flex items-center gap-1">
-              <span className="material-symbols-outlined text-sm">warning</span>
-              Funcionamos de Terça a Sábado. Selecione outro dia.
-            </p>
-          )}
-          <p className="text-gray-400 text-xs mt-2">Horário: Ter-Sáb, 07h-12h e 13h-19h</p>
-        </section>
-
-        {/* Time Selection */}
-        <section className="mb-4">
-          <h2 className="text-lg font-bold mb-3">Horários disponíveis</h2>
-          <div className="grid grid-cols-3 gap-3">
-            {times.map(time => (
-              <button
-                key={time}
-                onClick={() => setSelectedTime(time)}
-                className={`py-3 rounded-xl font-semibold text-sm transition-all border ${selectedTime === time ? 'bg-primary text-white shadow-md shadow-primary/25 ring-2 ring-primary ring-offset-2' : 'bg-white dark:bg-gray-800 border-gray-200 text-gray-600 hover:border-primary hover:text-primary'}`}
-              >
-                {time}
-              </button>
-            ))}
-          </div>
         </section>
       </main>
 
