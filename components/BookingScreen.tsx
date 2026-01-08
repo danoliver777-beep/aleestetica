@@ -190,17 +190,31 @@ const BookingScreen: React.FC<BookingProps> = ({ service: initialService, onBack
                   key={`${option.id}-${idx}`}
                   disabled={isServiceConfirmed}
                   onClick={() => toggleService(option.id, option.name, option.price, option.subtype)}
-                  className={`flex flex-col shrink-0 w-32 p-3 rounded-xl transition-all relative ${isSelected ? 'bg-primary text-white shadow-md shadow-primary/20 ring-2 ring-primary ring-offset-2' : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700'}`}
+                  className={`flex flex-col shrink-0 min-w-[140px] p-3 rounded-xl transition-all relative ${isSelected ? 'bg-primary text-white shadow-md shadow-primary/20 ring-2 ring-primary ring-offset-2' : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700'}`}
                 >
                   {isSelected && (
                     <span className="absolute top-1 right-1 material-symbols-outlined text-xs bg-white text-primary rounded-full p-0.5">check</span>
                   )}
-                  <span className="text-sm font-bold truncate">{option.name}</span>
-                  <span className={`text-xs ${isSelected ? 'text-white/80' : 'text-gray-500'}`}>R$ {option.price.toFixed(2)}</span>
+                  <span className="text-sm font-bold leading-tight break-words">{option.name}</span>
+                  <span className={`text-xs mt-1 ${isSelected ? 'text-white/80' : 'text-gray-500'}`}>R$ {option.price.toFixed(2)}</span>
                 </button>
               );
             })}
           </div>
+
+          {selectedServices.length > 0 && (
+            <div className="mt-4 p-4 rounded-xl bg-primary/5 border border-primary/10 animate-in fade-in slide-in-from-top-2">
+              <h3 className="text-xs font-bold text-primary uppercase tracking-wider mb-2">Serviços Selecionados:</h3>
+              <ul className="space-y-2">
+                {selectedServices.map((s, idx) => (
+                  <li key={idx} className="flex justify-between items-start text-sm">
+                    <span className="font-medium text-gray-700 dark:text-gray-200 pr-4">{s.name}</span>
+                    <span className="font-bold text-primary shrink-0">R$ {s.price.toFixed(2)}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           {!isServiceConfirmed && selectedServices.length > 0 && (
             <button
