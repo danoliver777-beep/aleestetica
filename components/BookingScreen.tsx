@@ -179,7 +179,7 @@ const BookingScreen: React.FC<BookingProps> = ({ service: initialService, onBack
             <span className="material-symbols-outlined text-primary filled">content_cut</span>
             Serviço
           </h2>
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-3 max-h-[420px] overflow-y-auto pr-1">
             {services.flatMap(svc => [
               { id: svc.id, name: svc.name, price: svc.price, subtype: null as string | null },
               ...(svc.subtypes || []).map(st => ({ id: svc.id, name: `${svc.name} (${st.name})`, price: st.price, subtype: st.name }))
