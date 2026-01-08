@@ -33,8 +33,7 @@ const AdminBookingModal: React.FC<AdminBookingModalProps> = ({
     // Selection States
     const [selectedProfileId, setSelectedProfileId] = useState<string>('');
     const [selectedPetId, setSelectedPetId] = useState<string>('');
-    const [selectedServiceId, setSelectedServiceId] = useState<string>('');
-    const [selectedSubtypeName, setSelectedSubtypeName] = useState<string | null>(null);
+    const [selectedAdminServices, setSelectedAdminServices] = useState<{ id: string; name: string; price: number; subtypeName: string | null }[]>([]);
 
     // Schedule States
     const [date, setDate] = useState<string>('');
@@ -129,8 +128,8 @@ const AdminBookingModal: React.FC<AdminBookingModalProps> = ({
     };
 
     const handleSave = async () => {
-        if (!selectedProfileId || !selectedPetId || !selectedServiceId || !date || !time) {
-            alert('Por favor, preencha todos os campos obrigatórios.');
+        if (!selectedProfileId || !selectedPetId || selectedAdminServices.length === 0 || !date || !time) {
+            alert('Por favor, selecione cliente, pet, ao menos um serviço, data e hora.');
             return;
         }
 
@@ -169,14 +168,21 @@ const AdminBookingModal: React.FC<AdminBookingModalProps> = ({
                 }
 
                 // Criar apenas os agendamentos sem conflito
+                const totalPrice = selectedAdminServices.reduce((sum, s) => sum + s.price, 0);
+                let noteContent = `Serviços Selecionados (Admin):\n`;
+                selectedAdminServices.forEach(s => {
+                    noteContent += `- ${s.name}${s.subtypeName ? ` (${s.subtypeName})` : ''}: R$ ${s.price.toFixed(2)}\n`;
+                });
+                noteContent += `\nValor Total: R$ ${totalPrice.toFixed(2)}`;
+
                 const promises = safeDates.map(scheduleDate =>
                     createAppointment({
                         user_id: selectedProfileId,
                         pet_id: selectedPetId,
-                        service_id: selectedServiceId,
+                        service_id: selectedAdminServices[0].id,
                         scheduled_date: scheduleDate,
                         scheduled_time: time,
-                        notes: selectedSubtypeName ? `Subtipo: ${selectedSubtypeName}\nAgendado pelo Administrador` : 'Agendado pelo Administrador'
+                        notes: noteContent.trim()
                     })
                 );
 
@@ -184,14 +190,21 @@ const AdminBookingModal: React.FC<AdminBookingModalProps> = ({
                 alert(`${safeDates.length} agendamento(s) criado(s) com sucesso! (${conflictingDates.length} conflito(s) ignorado(s))`);
             } else {
                 // Sem conflitos - criar todos
+                const totalPrice = selectedAdminServices.reduce((sum, s) => sum + s.price, 0);
+                let noteContent = `Serviços Selecionados (Admin):\n`;
+                selectedAdminServices.forEach(s => {
+                    noteContent += `- ${s.name}${s.subtypeName ? ` (${s.subtypeName})` : ''}: R$ ${s.price.toFixed(2)}\n`;
+                });
+                noteContent += `\nValor Total: R$ ${totalPrice.toFixed(2)}`;
+
                 const promises = datesToSchedule.map(scheduleDate =>
                     createAppointment({
                         user_id: selectedProfileId,
                         pet_id: selectedPetId,
-                        service_id: selectedServiceId,
+                        service_id: selectedAdminServices[0].id,
                         scheduled_date: scheduleDate,
                         scheduled_time: time,
-                        notes: selectedSubtypeName ? `Subtipo: ${selectedSubtypeName}\nAgendado pelo Administrador` : 'Agendado pelo Administrador'
+                        notes: noteContent.trim()
                     })
                 );
 
@@ -205,8 +218,7 @@ const AdminBookingModal: React.FC<AdminBookingModalProps> = ({
             // Reset form
             setSelectedProfileId('');
             setSelectedPetId('');
-            setSelectedServiceId('');
-            setSelectedSubtypeName(null);
+            setSelectedAdminServices([]);
             setIsRecurring(false);
             setRecurrenceCount(1);
         } catch (err) {
@@ -299,37 +311,61 @@ const AdminBookingModal: React.FC<AdminBookingModalProps> = ({
                             {/* 3. Serviço */}
                             <div>
                                 <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
-                                    3. Selecione o Serviço
+                                    3. Selecione os Serviços
                                 </label>
-                                <select
-                                    value={selectedSubtypeName ? `${selectedServiceId}|${selectedSubtypeName}` : selectedServiceId}
-                                    onChange={(e) => {
-                                        const value = e.target.value;
-                                        if (value.includes('|')) {
-                                            const [id, stName] = value.split('|');
-                                            setSelectedServiceId(id);
-                                            setSelectedSubtypeName(stName);
-                                        } else {
-                                            setSelectedServiceId(value);
-                                            setSelectedSubtypeName(null);
-                                        }
-                                    }}
-                                    className="w-full p-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-primary"
-                                >
-                                    <option value="">Selecione um serviço...</option>
+                                <div className="w-full max-h-48 overflow-y-auto p-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 space-y-1">
                                     {services.map(svc => (
                                         <React.Fragment key={svc.id}>
-                                            <option value={svc.id}>
-                                                {svc.name} - R$ {svc.price.toFixed(2)}
-                                            </option>
+                                            <div
+                                                onClick={() => {
+                                                    const isSelected = selectedAdminServices.some(s => s.id === svc.id && s.subtypeName === null);
+                                                    if (isSelected) {
+                                                        setSelectedAdminServices(prev => prev.filter(s => !(s.id === svc.id && s.subtypeName === null)));
+                                                    } else {
+                                                        setSelectedAdminServices(prev => [...prev, { id: svc.id, name: svc.name, price: svc.price, subtypeName: null }]);
+                                                    }
+                                                }}
+                                                className={`flex items-center justify-between p-2 rounded-lg cursor-pointer transition-colors ${selectedAdminServices.some(s => s.id === svc.id && s.subtypeName === null) ? 'bg-primary/10 border-primary border' : 'hover:bg-gray-50 dark:hover:bg-gray-700 border-transparent border'}`}
+                                            >
+                                                <div className="flex items-center gap-2">
+                                                    <span className={`material-symbols-outlined text-sm ${selectedAdminServices.some(s => s.id === svc.id && s.subtypeName === null) ? 'text-primary' : 'text-gray-300'}`}>
+                                                        {selectedAdminServices.some(s => s.id === svc.id && s.subtypeName === null) ? 'check_box' : 'check_box_outline_blank'}
+                                                    </span>
+                                                    <span className="text-sm font-medium">{svc.name}</span>
+                                                </div>
+                                                <span className="text-xs font-bold text-primary">R$ {svc.price.toFixed(2)}</span>
+                                            </div>
                                             {svc.subtypes && svc.subtypes.map((st, i) => (
-                                                <option key={`${svc.id}-${i}`} value={`${svc.id}|${st.name}`}>
-                                                    &nbsp;&nbsp;↳ {svc.name} ({st.name}) - R$ {st.price.toFixed(2)}
-                                                </option>
+                                                <div
+                                                    key={`${svc.id}-${i}`}
+                                                    onClick={() => {
+                                                        const isSelected = selectedAdminServices.some(s => s.id === svc.id && s.subtypeName === st.name);
+                                                        if (isSelected) {
+                                                            setSelectedAdminServices(prev => prev.filter(s => !(s.id === svc.id && s.subtypeName === st.name)));
+                                                        } else {
+                                                            setSelectedAdminServices(prev => [...prev, { id: svc.id, name: `${svc.name} (${st.name})`, price: st.price, subtypeName: st.name }]);
+                                                        }
+                                                    }}
+                                                    className={`flex items-center justify-between p-2 ml-4 rounded-lg cursor-pointer transition-colors ${selectedAdminServices.some(s => s.id === svc.id && s.subtypeName === st.name) ? 'bg-primary/10 border-primary border' : 'hover:bg-gray-50 dark:hover:bg-gray-700 border-transparent border'}`}
+                                                >
+                                                    <div className="flex items-center gap-2">
+                                                        <span className={`material-symbols-outlined text-sm ${selectedAdminServices.some(s => s.id === svc.id && s.subtypeName === st.name) ? 'text-primary' : 'text-gray-300'}`}>
+                                                            {selectedAdminServices.some(s => s.id === svc.id && s.subtypeName === st.name) ? 'check_box' : 'check_box_outline_blank'}
+                                                        </span>
+                                                        <span className="text-xs font-medium">↳ {st.name}</span>
+                                                    </div>
+                                                    <span className="text-xs font-bold text-primary">R$ {st.price.toFixed(2)}</span>
+                                                </div>
                                             ))}
                                         </React.Fragment>
                                     ))}
-                                </select>
+                                </div>
+                                {selectedAdminServices.length > 0 && (
+                                    <div className="mt-2 text-right">
+                                        <span className="text-xs font-bold text-gray-500 uppercase">Total: </span>
+                                        <span className="text-sm font-black text-primary">R$ {selectedAdminServices.reduce((sum, s) => sum + s.price, 0).toFixed(2)}</span>
+                                    </div>
+                                )}
                             </div>
 
                             {/* 4. Data e Hora */}
@@ -427,7 +463,7 @@ const AdminBookingModal: React.FC<AdminBookingModalProps> = ({
                     </button>
                     <button
                         onClick={handleSave}
-                        disabled={saving || !selectedPetId || !selectedServiceId}
+                        disabled={saving || !selectedPetId || selectedAdminServices.length === 0}
                         className="flex-1 py-3 rounded-xl bg-primary text-white font-bold hover:bg-primary-dark transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                     >
                         {saving ? (
