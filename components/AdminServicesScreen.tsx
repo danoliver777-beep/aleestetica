@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Screen } from '../types';
 import AdminBottomNav from './AdminBottomNav';
-import { getServices, createService, deleteService, updateService, uploadServiceImage, Service } from '../lib/database';
+import { getServices, createService, deleteService, updateService, uploadServiceImage, Service, ServiceExtra } from '../lib/database';
 
 interface AdminServicesProps {
   onNavigate: (s: Screen) => void;
@@ -13,11 +13,11 @@ const AdminServicesScreen: React.FC<AdminServicesProps> = ({ onNavigate }) => {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [expandedDescriptions, setExpandedDescriptions] = useState<Set<string>>(new Set());
-  const [newService, setNewService] = useState({ name: '', description: '', price: '', duration: '', image_url: '' });
+  const [newService, setNewService] = useState({ name: '', description: '', price: '', duration: '', image_url: '', extras: [] as ServiceExtra[] });
   const [saving, setSaving] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [editingService, setEditingService] = useState<Service | null>(null);
-  const [editForm, setEditForm] = useState({ name: '', description: '', price: '', duration: '', image_url: '' });
+  const [editForm, setEditForm] = useState({ name: '', description: '', price: '', duration: '', image_url: '', extras: [] as ServiceExtra[] });
 
   useEffect(() => {
     loadServices();
@@ -71,9 +71,10 @@ const AdminServicesScreen: React.FC<AdminServicesProps> = ({ onNavigate }) => {
         price: parseFloat(newService.price),
         duration: newService.duration.trim() || null,
         image_url: newService.image_url || null,
-        rating: 5.0
+        rating: 5.0,
+        extras: newService.extras.length > 0 ? newService.extras : null
       });
-      setNewService({ name: '', description: '', price: '', duration: '', image_url: '' });
+      setNewService({ name: '', description: '', price: '', duration: '', image_url: '', extras: [] });
       setShowForm(false);
       loadServices();
     } catch (err) {
@@ -102,7 +103,8 @@ const AdminServicesScreen: React.FC<AdminServicesProps> = ({ onNavigate }) => {
       description: service.description || '',
       price: service.price.toString(),
       duration: service.duration || '',
-      image_url: service.image_url || ''
+      image_url: service.image_url || '',
+      extras: service.extras || []
     });
     setEditingService(service);
   };
@@ -121,7 +123,8 @@ const AdminServicesScreen: React.FC<AdminServicesProps> = ({ onNavigate }) => {
         description: editForm.description.trim() || null,
         price: parseFloat(editForm.price),
         duration: editForm.duration.trim() || null,
-        image_url: editForm.image_url.trim() || null
+        image_url: editForm.image_url.trim() || null,
+        extras: editForm.extras.length > 0 ? editForm.extras : null
       });
       setEditingService(null);
       loadServices();
@@ -144,6 +147,43 @@ const AdminServicesScreen: React.FC<AdminServicesProps> = ({ onNavigate }) => {
       }
       return newSet;
     });
+  };
+
+  const calculateTotal = (basePrice: string, extras: ServiceExtra[]) => {
+    const base = parseFloat(basePrice) || 0;
+    const extrasTotal = extras.reduce((sum, extra) => sum + (extra.price || 0), 0);
+    return (base + extrasTotal).toFixed(2);
+  };
+
+  const addExtra = (type: 'new' | 'edit') => {
+    const emptyExtra = { name: '', price: 0 };
+    if (type === 'new') {
+      setNewService(prev => ({ ...prev, extras: [...prev.extras, emptyExtra] }));
+    } else {
+      setEditForm(prev => ({ ...prev, extras: [...prev.extras, emptyExtra] }));
+    }
+  };
+
+  const removeExtra = (index: number, type: 'new' | 'edit') => {
+    if (type === 'new') {
+      setNewService(prev => ({ ...prev, extras: prev.extras.filter((_, i) => i !== index) }));
+    } else {
+      setEditForm(prev => ({ ...prev, extras: prev.extras.filter((_, i) => i !== index) }));
+    }
+  };
+
+  const updateExtra = (index: number, field: keyof ServiceExtra, value: string | number, type: 'new' | 'edit') => {
+    const updateFn = (prev: any) => {
+      const newExtras = [...prev.extras];
+      newExtras[index] = { ...newExtras[index], [field]: value };
+      return { ...prev, extras: newExtras };
+    };
+
+    if (type === 'new') {
+      setNewService(updateFn);
+    } else {
+      setEditForm(updateFn);
+    }
   };
 
   return (
@@ -327,6 +367,55 @@ const AdminServicesScreen: React.FC<AdminServicesProps> = ({ onNavigate }) => {
                   </label>
                 </div>
               </div>
+              {/* Seção de Extras para Novo Serviço */}
+              <div className="space-y-2 pt-2 border-t border-gray-100">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold text-gray-500 ml-1">Serviços Adicionais</label>
+                  <button
+                    type="button"
+                    onClick={() => addExtra('new')}
+                    className="text-primary text-[10px] font-bold px-3 py-1 bg-primary/10 rounded-lg hover:bg-primary/20 transition-colors"
+                  >
+                    + Novo Adicional
+                  </button>
+                </div>
+                {newService.extras && newService.extras.map((extra, index) => (
+                  <div key={index} className="flex gap-2 items-center animate-in fade-in zoom-in duration-200">
+                    <input
+                      value={extra.name}
+                      onChange={(e) => updateExtra(index, 'name', e.target.value, 'new')}
+                      className="flex-1 h-11 px-3 rounded-xl bg-gray-50 border border-gray-200 text-sm outline-none focus:border-primary transition-all"
+                      placeholder="Nome (ex: Tosa)"
+                    />
+                    <div className="relative w-24">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-gray-400">R$</span>
+                      <input
+                        type="number"
+                        value={extra.price || ''}
+                        onChange={(e) => updateExtra(index, 'price', parseFloat(e.target.value) || 0, 'new')}
+                        className="w-full h-11 pl-8 pr-3 rounded-xl bg-gray-50 border border-gray-200 text-sm outline-none focus:border-primary transition-all text-right"
+                        placeholder="0"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => removeExtra(index, 'new')}
+                      className="text-red-400 p-2 hover:bg-red-50 rounded-full transition-colors"
+                    >
+                      <span className="material-symbols-outlined text-xl">delete</span>
+                    </button>
+                  </div>
+                ))}
+              </div>
+
+              <div className="bg-primary/5 p-4 rounded-2xl flex justify-between items-center border border-primary/10">
+                <div className="flex flex-col">
+                  <span className="text-[10px] font-bold text-primary/60 uppercase tracking-wider">Valor Total</span>
+                  <span className="text-xs text-gray-500">Base + Adicionais</span>
+                </div>
+                <span className="text-xl font-black text-primary">R$ {calculateTotal(newService.price, newService.extras)}</span>
+              </div>
+
               <button
                 onClick={handleCreate}
                 disabled={saving || uploadingImage}
@@ -432,6 +521,55 @@ const AdminServicesScreen: React.FC<AdminServicesProps> = ({ onNavigate }) => {
                   </label>
                 </div>
               </div>
+              {/* Seção de Extras para Editar Serviço */}
+              <div className="space-y-2 pt-2 border-t border-gray-100">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold text-gray-500 ml-1">Serviços Adicionais</label>
+                  <button
+                    type="button"
+                    onClick={() => addExtra('edit')}
+                    className="text-primary text-[10px] font-bold px-3 py-1 bg-primary/10 rounded-lg hover:bg-primary/20 transition-colors"
+                  >
+                    + Novo Adicional
+                  </button>
+                </div>
+                {editForm.extras && editForm.extras.map((extra, index) => (
+                  <div key={index} className="flex gap-2 items-center animate-in fade-in zoom-in duration-200">
+                    <input
+                      value={extra.name}
+                      onChange={(e) => updateExtra(index, 'name', e.target.value, 'edit')}
+                      className="flex-1 h-11 px-3 rounded-xl bg-gray-50 border border-gray-200 text-sm outline-none focus:border-primary transition-all"
+                      placeholder="Nome (ex: Tosa)"
+                    />
+                    <div className="relative w-24">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-gray-400">R$</span>
+                      <input
+                        type="number"
+                        value={extra.price || ''}
+                        onChange={(e) => updateExtra(index, 'price', parseFloat(e.target.value) || 0, 'edit')}
+                        className="w-full h-11 pl-8 pr-3 rounded-xl bg-gray-50 border border-gray-200 text-sm outline-none focus:border-primary transition-all text-right"
+                        placeholder="0"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => removeExtra(index, 'edit')}
+                      className="text-red-400 p-2 hover:bg-red-50 rounded-full transition-colors"
+                    >
+                      <span className="material-symbols-outlined text-xl">delete</span>
+                    </button>
+                  </div>
+                ))}
+              </div>
+
+              <div className="bg-primary/5 p-4 rounded-2xl flex justify-between items-center border border-primary/10">
+                <div className="flex flex-col">
+                  <span className="text-[10px] font-bold text-primary/60 uppercase tracking-wider">Valor Total</span>
+                  <span className="text-xs text-gray-500">Base + Adicionais</span>
+                </div>
+                <span className="text-xl font-black text-primary">R$ {calculateTotal(editForm.price, editForm.extras)}</span>
+              </div>
+
               <button
                 onClick={handleUpdate}
                 disabled={saving || uploadingImage}

@@ -124,6 +124,11 @@ export const deletePet = async (id: string) => {
 
 // ============ SERVICES ============
 
+export interface ServiceExtra {
+    name: string;
+    price: number;
+}
+
 export interface Service {
     id: string;
     name: string;
@@ -132,6 +137,7 @@ export interface Service {
     duration: string | null;
     image_url: string | null;
     rating: number;
+    extras?: ServiceExtra[] | null;
 }
 
 export const getServices = async (): Promise<Service[]> => {
