@@ -166,47 +166,24 @@ const BookingScreen: React.FC<BookingProps> = ({ service: initialService, onBack
             Serviço
           </h2>
           <div className="flex gap-3 overflow-x-auto pb-2 no-scrollbar">
-            {services.map(svc => (
+            {services.flatMap(svc => [
+              { id: svc.id, name: svc.name, price: svc.price, subtype: null as string | null },
+              ...(svc.subtypes || []).map(st => ({ id: svc.id, name: `${svc.name} (${st.name})`, price: st.price, subtype: st.name }))
+            ]).map((option, idx) => (
               <button
-                key={svc.id}
-                onClick={() => setSelectedServiceId(svc.id)}
-                className={`flex flex-col shrink-0 w-32 p-3 rounded-xl transition-all ${selectedServiceId === svc.id ? 'bg-primary text-white shadow-md shadow-primary/20' : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700'}`}
+                key={`${option.id}-${idx}`}
+                onClick={() => {
+                  setSelectedServiceId(option.id);
+                  setSelectedSubtypeName(option.subtype);
+                }}
+                className={`flex flex-col shrink-0 w-32 p-3 rounded-xl transition-all ${selectedServiceId === option.id && selectedSubtypeName === option.subtype ? 'bg-primary text-white shadow-md shadow-primary/20' : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700'}`}
               >
-                <span className="text-sm font-bold truncate">{svc.name}</span>
-                <span className={`text-xs ${selectedServiceId === svc.id ? 'text-white/80' : 'text-gray-500'}`}>R$ {svc.price.toFixed(2)}</span>
+                <span className="text-sm font-bold truncate">{option.name}</span>
+                <span className={`text-xs ${selectedServiceId === option.id && selectedSubtypeName === option.subtype ? 'text-white/80' : 'text-gray-500'}`}>R$ {option.price.toFixed(2)}</span>
               </button>
             ))}
           </div>
         </section>
-
-        {/* Subtype Selection */}
-        {selectedService && selectedService.subtypes && selectedService.subtypes.length > 0 && (
-          <section className="mb-6">
-            <h2 className="text-lg font-bold mb-3 flex items-center gap-2">
-              <span className="material-symbols-outlined text-primary filled">style</span>
-              Escolha uma variação
-            </h2>
-            <div className="flex gap-3 overflow-x-auto pb-2 no-scrollbar">
-              <button
-                onClick={() => setSelectedSubtypeName(null)}
-                className={`flex flex-col shrink-0 w-32 p-3 rounded-xl transition-all ${!selectedSubtypeName ? 'bg-primary text-white shadow-md shadow-primary/20' : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700'}`}
-              >
-                <span className="text-sm font-bold truncate">Padrão</span>
-                <span className={`text-xs ${!selectedSubtypeName ? 'text-white/80' : 'text-gray-500'}`}>R$ {selectedService.price.toFixed(2)}</span>
-              </button>
-              {selectedService.subtypes.map((st, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => setSelectedSubtypeName(st.name)}
-                  className={`flex flex-col shrink-0 w-32 p-3 rounded-xl transition-all ${selectedSubtypeName === st.name ? 'bg-primary text-white shadow-md shadow-primary/20' : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700'}`}
-                >
-                  <span className="text-sm font-bold truncate">{st.name}</span>
-                  <span className={`text-xs ${selectedSubtypeName === st.name ? 'text-white/80' : 'text-gray-500'}`}>R$ {st.price.toFixed(2)}</span>
-                </button>
-              ))}
-            </div>
-          </section>
-        )}
 
         {/* Extras Selection */}
         {selectedService && selectedService.extras && selectedService.extras.length > 0 && (

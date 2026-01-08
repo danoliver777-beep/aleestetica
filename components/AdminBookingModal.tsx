@@ -34,6 +34,7 @@ const AdminBookingModal: React.FC<AdminBookingModalProps> = ({
     const [selectedProfileId, setSelectedProfileId] = useState<string>('');
     const [selectedPetId, setSelectedPetId] = useState<string>('');
     const [selectedServiceId, setSelectedServiceId] = useState<string>('');
+    const [selectedSubtypeName, setSelectedSubtypeName] = useState<string | null>(null);
 
     // Schedule States
     const [date, setDate] = useState<string>('');
@@ -175,7 +176,7 @@ const AdminBookingModal: React.FC<AdminBookingModalProps> = ({
                         service_id: selectedServiceId,
                         scheduled_date: scheduleDate,
                         scheduled_time: time,
-                        notes: 'Agendado pelo Administrador'
+                        notes: selectedSubtypeName ? `Subtipo: ${selectedSubtypeName}\nAgendado pelo Administrador` : 'Agendado pelo Administrador'
                     })
                 );
 
@@ -190,7 +191,7 @@ const AdminBookingModal: React.FC<AdminBookingModalProps> = ({
                         service_id: selectedServiceId,
                         scheduled_date: scheduleDate,
                         scheduled_time: time,
-                        notes: 'Agendado pelo Administrador'
+                        notes: selectedSubtypeName ? `Subtipo: ${selectedSubtypeName}\nAgendado pelo Administrador` : 'Agendado pelo Administrador'
                     })
                 );
 
@@ -205,6 +206,7 @@ const AdminBookingModal: React.FC<AdminBookingModalProps> = ({
             setSelectedProfileId('');
             setSelectedPetId('');
             setSelectedServiceId('');
+            setSelectedSubtypeName(null);
             setIsRecurring(false);
             setRecurrenceCount(1);
         } catch (err) {
@@ -300,15 +302,32 @@ const AdminBookingModal: React.FC<AdminBookingModalProps> = ({
                                     3. Selecione o Serviço
                                 </label>
                                 <select
-                                    value={selectedServiceId}
-                                    onChange={(e) => setSelectedServiceId(e.target.value)}
+                                    value={selectedSubtypeName ? `${selectedServiceId}|${selectedSubtypeName}` : selectedServiceId}
+                                    onChange={(e) => {
+                                        const value = e.target.value;
+                                        if (value.includes('|')) {
+                                            const [id, stName] = value.split('|');
+                                            setSelectedServiceId(id);
+                                            setSelectedSubtypeName(stName);
+                                        } else {
+                                            setSelectedServiceId(value);
+                                            setSelectedSubtypeName(null);
+                                        }
+                                    }}
                                     className="w-full p-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-primary"
                                 >
                                     <option value="">Selecione um serviço...</option>
                                     {services.map(svc => (
-                                        <option key={svc.id} value={svc.id}>
-                                            {svc.name} - R$ {svc.price.toFixed(2)}
-                                        </option>
+                                        <React.Fragment key={svc.id}>
+                                            <option value={svc.id}>
+                                                {svc.name} - R$ {svc.price.toFixed(2)}
+                                            </option>
+                                            {svc.subtypes && svc.subtypes.map((st, i) => (
+                                                <option key={`${svc.id}-${i}`} value={`${svc.id}|${st.name}`}>
+                                                    &nbsp;&nbsp;↳ {svc.name} ({st.name}) - R$ {st.price.toFixed(2)}
+                                                </option>
+                                            ))}
+                                        </React.Fragment>
                                     ))}
                                 </select>
                             </div>
