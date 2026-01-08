@@ -191,7 +191,7 @@ const AdminServicesScreen: React.FC<AdminServicesProps> = ({ onNavigate }) => {
                 </div>
                 <div className="flex flex-col flex-1 justify-center min-h-[80px] min-w-0">
                   <div className="flex justify-between items-start">
-                    <h3 className="text-base font-bold leading-tight mr-2 flex-1 min-w-0 truncate">{service.name}</h3>
+                    <h3 className="text-sm font-bold leading-tight mr-2 flex-1 min-w-0 truncate">{service.name}</h3>
                     <div className="flex items-center gap-1 -mt-1 shrink-0">
                       <button
                         onClick={() => handleEdit(service)}
