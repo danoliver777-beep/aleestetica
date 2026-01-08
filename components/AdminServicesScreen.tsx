@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Screen } from '../types';
 import AdminBottomNav from './AdminBottomNav';
-import { getServices, createService, deleteService, updateService, uploadServiceImage, Service, ServiceExtra } from '../lib/database';
+import { getServices, createService, deleteService, updateService, uploadServiceImage, Service, ServiceExtra, ServiceSubtype } from '../lib/database';
 
 interface AdminServicesProps {
   onNavigate: (s: Screen) => void;
@@ -13,11 +13,11 @@ const AdminServicesScreen: React.FC<AdminServicesProps> = ({ onNavigate }) => {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [expandedDescriptions, setExpandedDescriptions] = useState<Set<string>>(new Set());
-  const [newService, setNewService] = useState({ name: '', description: '', price: '', duration: '', image_url: '', extras: [] as ServiceExtra[] });
+  const [newService, setNewService] = useState({ name: '', description: '', price: '', duration: '', image_url: '', extras: [] as ServiceExtra[], subtypes: [] as ServiceSubtype[] });
   const [saving, setSaving] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [editingService, setEditingService] = useState<Service | null>(null);
-  const [editForm, setEditForm] = useState({ name: '', description: '', price: '', duration: '', image_url: '', extras: [] as ServiceExtra[] });
+  const [editForm, setEditForm] = useState({ name: '', description: '', price: '', duration: '', image_url: '', extras: [] as ServiceExtra[], subtypes: [] as ServiceSubtype[] });
 
   useEffect(() => {
     loadServices();
@@ -72,9 +72,10 @@ const AdminServicesScreen: React.FC<AdminServicesProps> = ({ onNavigate }) => {
         duration: newService.duration.trim() || null,
         image_url: newService.image_url || null,
         rating: 5.0,
-        extras: newService.extras.length > 0 ? newService.extras : null
+        extras: newService.extras.length > 0 ? newService.extras : null,
+        subtypes: newService.subtypes.length > 0 ? newService.subtypes : null
       });
-      setNewService({ name: '', description: '', price: '', duration: '', image_url: '', extras: [] });
+      setNewService({ name: '', description: '', price: '', duration: '', image_url: '', extras: [], subtypes: [] });
       setShowForm(false);
       loadServices();
     } catch (err) {
@@ -104,7 +105,8 @@ const AdminServicesScreen: React.FC<AdminServicesProps> = ({ onNavigate }) => {
       price: service.price.toString(),
       duration: service.duration || '',
       image_url: service.image_url || '',
-      extras: service.extras || []
+      extras: service.extras || [],
+      subtypes: service.subtypes || []
     });
     setEditingService(service);
   };
@@ -124,7 +126,8 @@ const AdminServicesScreen: React.FC<AdminServicesProps> = ({ onNavigate }) => {
         price: parseFloat(editForm.price),
         duration: editForm.duration.trim() || null,
         image_url: editForm.image_url.trim() || null,
-        extras: editForm.extras.length > 0 ? editForm.extras : null
+        extras: editForm.extras.length > 0 ? editForm.extras : null,
+        subtypes: editForm.subtypes.length > 0 ? editForm.subtypes : null
       });
       setEditingService(null);
       loadServices();
@@ -177,6 +180,37 @@ const AdminServicesScreen: React.FC<AdminServicesProps> = ({ onNavigate }) => {
       const newExtras = [...prev.extras];
       newExtras[index] = { ...newExtras[index], [field]: value };
       return { ...prev, extras: newExtras };
+    };
+
+    if (type === 'new') {
+      setNewService(updateFn);
+    } else {
+      setEditForm(updateFn);
+    }
+  };
+
+  const addSubtype = (type: 'new' | 'edit') => {
+    const emptySubtype = { name: '', price: 0 };
+    if (type === 'new') {
+      setNewService(prev => ({ ...prev, subtypes: [...prev.subtypes, emptySubtype] }));
+    } else {
+      setEditForm(prev => ({ ...prev, subtypes: [...prev.subtypes, emptySubtype] }));
+    }
+  };
+
+  const removeSubtype = (index: number, type: 'new' | 'edit') => {
+    if (type === 'new') {
+      setNewService(prev => ({ ...prev, subtypes: prev.subtypes.filter((_, i) => i !== index) }));
+    } else {
+      setEditForm(prev => ({ ...prev, subtypes: prev.subtypes.filter((_, i) => i !== index) }));
+    }
+  };
+
+  const updateSubtype = (index: number, field: keyof ServiceSubtype, value: string | number, type: 'new' | 'edit') => {
+    const updateFn = (prev: any) => {
+      const newSubtypes = [...prev.subtypes];
+      newSubtypes[index] = { ...newSubtypes[index], [field]: value };
+      return { ...prev, subtypes: newSubtypes };
     };
 
     if (type === 'new') {
@@ -260,6 +294,19 @@ const AdminServicesScreen: React.FC<AdminServicesProps> = ({ onNavigate }) => {
                       </button>
                     )}
                   </div>
+
+                  {/* Display Subtypes if any */}
+                  {service.subtypes && service.subtypes.length > 0 && (
+                    <div className="mt-2 space-y-1">
+                      {service.subtypes.map((st, i) => (
+                        <div key={i} className="flex justify-between items-center bg-gray-50 dark:bg-gray-800/50 px-2 py-1 rounded text-[10px] text-gray-600">
+                          <span className="font-medium">{st.name}</span>
+                          <span className="font-bold text-primary">R$ {st.price.toFixed(2)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
                   <div className="flex items-center gap-3 mt-auto pt-2">
                     <div className="flex items-center gap-1 bg-gray-100 px-2 py-1 rounded-md">
                       <span className="material-symbols-outlined text-gray-500 text-[14px]">schedule</span>
@@ -284,7 +331,7 @@ const AdminServicesScreen: React.FC<AdminServicesProps> = ({ onNavigate }) => {
                 <span className="material-symbols-outlined">close</span>
               </button>
             </div>
-            <div className="space-y-3">
+            <div className="space-y-4">
               <div>
                 <label className="text-xs font-semibold text-gray-500 ml-1">Nome *</label>
                 <input
@@ -324,6 +371,7 @@ const AdminServicesScreen: React.FC<AdminServicesProps> = ({ onNavigate }) => {
                   />
                 </div>
               </div>
+
               <div>
                 <label className="text-xs font-semibold text-gray-500 ml-1">Imagem do Serviço</label>
                 <div className="mt-1 flex flex-col items-center gap-3 p-3 border-2 border-dashed border-gray-200 rounded-2xl bg-gray-50 transition-colors hover:bg-gray-100/50">
@@ -367,6 +415,48 @@ const AdminServicesScreen: React.FC<AdminServicesProps> = ({ onNavigate }) => {
                   </label>
                 </div>
               </div>
+
+              {/* Seção de Subtipos para Novo Serviço */}
+              <div className="space-y-2 pt-2 border-t border-gray-100">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold text-gray-500 ml-1">Subtipos de Serviço</label>
+                  <button
+                    type="button"
+                    onClick={() => addSubtype('new')}
+                    className="text-primary text-[10px] font-bold px-3 py-1 bg-primary/10 rounded-lg hover:bg-primary/20 transition-colors"
+                  >
+                    + Novo Subtipo
+                  </button>
+                </div>
+                {newService.subtypes && newService.subtypes.map((subtype, index) => (
+                  <div key={index} className="flex gap-2 items-center animate-in fade-in zoom-in duration-200">
+                    <input
+                      value={subtype.name}
+                      onChange={(e) => updateSubtype(index, 'name', e.target.value, 'new')}
+                      className="flex-1 h-11 px-3 rounded-xl bg-gray-50 border border-gray-200 text-sm outline-none focus:border-primary transition-all"
+                      placeholder="Ex: Banho pêlo embolado"
+                    />
+                    <div className="relative w-24">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-gray-400">R$</span>
+                      <input
+                        type="number"
+                        value={subtype.price || ''}
+                        onChange={(e) => updateSubtype(index, 'price', parseFloat(e.target.value) || 0, 'new')}
+                        className="w-full h-11 pl-8 pr-3 rounded-xl bg-gray-50 border border-gray-200 text-sm outline-none focus:border-primary transition-all text-right"
+                        placeholder="0"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => removeSubtype(index, 'new')}
+                      className="text-red-400 p-2 hover:bg-red-50 rounded-full transition-colors"
+                    >
+                      <span className="material-symbols-outlined text-xl">delete</span>
+                    </button>
+                  </div>
+                ))}
+              </div>
+
               {/* Seção de Extras para Novo Serviço */}
               <div className="space-y-2 pt-2 border-t border-gray-100">
                 <div className="flex items-center justify-between">
@@ -521,6 +611,48 @@ const AdminServicesScreen: React.FC<AdminServicesProps> = ({ onNavigate }) => {
                   </label>
                 </div>
               </div>
+
+              {/* Seção de Subtipos para Editar Serviço */}
+              <div className="space-y-2 pt-2 border-t border-gray-100">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold text-gray-500 ml-1">Subtipos de Serviço</label>
+                  <button
+                    type="button"
+                    onClick={() => addSubtype('edit')}
+                    className="text-primary text-[10px] font-bold px-3 py-1 bg-primary/10 rounded-lg hover:bg-primary/20 transition-colors"
+                  >
+                    + Novo Subtipo
+                  </button>
+                </div>
+                {editForm.subtypes && editForm.subtypes.map((subtype, index) => (
+                  <div key={index} className="flex gap-2 items-center animate-in fade-in zoom-in duration-200">
+                    <input
+                      value={subtype.name}
+                      onChange={(e) => updateSubtype(index, 'name', e.target.value, 'edit')}
+                      className="flex-1 h-11 px-3 rounded-xl bg-gray-50 border border-gray-200 text-sm outline-none focus:border-primary transition-all"
+                      placeholder="Ex: Banho pêlo embolado"
+                    />
+                    <div className="relative w-24">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-gray-400">R$</span>
+                      <input
+                        type="number"
+                        value={subtype.price || ''}
+                        onChange={(e) => updateSubtype(index, 'price', parseFloat(e.target.value) || 0, 'edit')}
+                        className="w-full h-11 pl-8 pr-3 rounded-xl bg-gray-50 border border-gray-200 text-sm outline-none focus:border-primary transition-all text-right"
+                        placeholder="0"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => removeSubtype(index, 'edit')}
+                      className="text-red-400 p-2 hover:bg-red-50 rounded-full transition-colors"
+                    >
+                      <span className="material-symbols-outlined text-xl">delete</span>
+                    </button>
+                  </div>
+                ))}
+              </div>
+
               {/* Seção de Extras para Editar Serviço */}
               <div className="space-y-2 pt-2 border-t border-gray-100">
                 <div className="flex items-center justify-between">

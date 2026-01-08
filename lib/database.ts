@@ -129,6 +129,11 @@ export interface ServiceExtra {
     price: number;
 }
 
+export interface ServiceSubtype {
+    name: string;
+    price: number;
+}
+
 export interface Service {
     id: string;
     name: string;
@@ -138,6 +143,7 @@ export interface Service {
     image_url: string | null;
     rating: number;
     extras?: ServiceExtra[] | null;
+    subtypes?: ServiceSubtype[] | null;
 }
 
 export const getServices = async (): Promise<Service[]> => {
