@@ -179,27 +179,69 @@ const BookingScreen: React.FC<BookingProps> = ({ service: initialService, onBack
             <span className="material-symbols-outlined text-primary filled">content_cut</span>
             Serviço
           </h2>
-          <div className="flex flex-col gap-3">
-            {services.flatMap(svc => [
-              { id: svc.id, name: svc.name, price: svc.price, subtype: null as string | null },
-              ...(svc.subtypes || []).map(st => ({ id: svc.id, name: `${svc.name} (${st.name})`, price: st.price, subtype: st.name }))
-            ]).map((option, idx) => {
-              const isSelected = selectedServices.some(s => s.serviceId === option.id && s.subtypeName === option.subtype);
-              return (
+          <div className="flex flex-col gap-4">
+            {services.map((svc) => (
+              <div key={svc.id} className="bg-white dark:bg-gray-800 rounded-2xl p-4 border border-gray-100 dark:border-gray-700 shadow-sm transition-all hover:border-primary/20">
+                {/* Main Service Header */}
+                <div className="flex justify-between items-center mb-3">
+                  <div className="flex flex-col">
+                    <h3 className="text-sm font-bold">{svc.name}</h3>
+                    <span className="text-[10px] text-gray-400 font-medium">Serviço Base</span>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-sm font-bold text-primary">R$ {svc.price.toFixed(2)}</span>
+                  </div>
+                </div>
+
+                {/* Base Service Toggle */}
                 <button
-                  key={`${option.id}-${idx}`}
                   disabled={isServiceConfirmed}
-                  onClick={() => toggleService(option.id, option.name, option.price, option.subtype)}
-                  className={`flex flex-col w-full p-3 rounded-xl transition-all relative ${isSelected ? 'bg-primary text-white shadow-md shadow-primary/20 ring-2 ring-primary ring-offset-2' : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700'}`}
+                  onClick={() => toggleService(svc.id, svc.name, svc.price, null)}
+                  className={`w-full py-2.5 px-4 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-2 ${selectedServices.some(s => s.serviceId === svc.id && s.subtypeName === null)
+                      ? 'bg-primary text-white border-primary shadow-md shadow-primary/20'
+                      : 'bg-gray-50 dark:bg-gray-700 border-gray-100 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600'
+                    }`}
                 >
-                  {isSelected && (
-                    <span className="absolute top-1 right-1 material-symbols-outlined text-xs bg-white text-primary rounded-full p-0.5">check</span>
+                  {selectedServices.some(s => s.serviceId === svc.id && s.subtypeName === null) && (
+                    <span className="material-symbols-outlined text-[16px]">check_circle</span>
                   )}
-                  <span className="text-sm font-bold leading-tight break-words">{option.name}</span>
-                  <span className={`text-xs mt-1 ${isSelected ? 'text-white/80' : 'text-gray-500'}`}>R$ {option.price.toFixed(2)}</span>
+                  {selectedServices.some(s => s.serviceId === svc.id && s.subtypeName === null) ? 'Selecionado' : `Selecionar ${svc.name}`}
                 </button>
-              );
-            })}
+
+                {/* Subtypes Section */}
+                {svc.subtypes && svc.subtypes.length > 0 && (
+                  <div className="mt-4 pt-4 border-t border-gray-50 dark:border-gray-700/50">
+                    <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2.5">
+                      Variações e Subtipos:
+                    </p>
+                    <div className="flex flex-col gap-2">
+                      {svc.subtypes.map((st, idx) => {
+                        const isSelected = selectedServices.some(s => s.serviceId === svc.id && s.subtypeName === st.name);
+                        return (
+                          <button
+                            key={idx}
+                            disabled={isServiceConfirmed}
+                            onClick={() => toggleService(svc.id, `${svc.name} (${st.name})`, st.price, st.name)}
+                            className={`flex items-center justify-between p-3 rounded-xl border transition-all ${isSelected
+                                ? 'bg-blue-50 dark:bg-blue-900/10 border-primary text-primary shadow-sm'
+                                : 'bg-white dark:bg-gray-900 border-gray-100 dark:border-gray-700 text-gray-600 dark:text-gray-400'
+                              }`}
+                          >
+                            <div className="flex items-center gap-2">
+                              <span className={`material-symbols-outlined text-[20px] ${isSelected ? 'text-primary' : 'text-gray-300'}`}>
+                                {isSelected ? 'check_circle' : 'add_circle'}
+                              </span>
+                              <span className="text-xs font-semibold">{st.name}</span>
+                            </div>
+                            <span className="text-xs font-bold">R$ {st.price.toFixed(2)}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
 
           {selectedServices.length > 0 && (
