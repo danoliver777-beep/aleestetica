@@ -26,6 +26,7 @@ const AdminCalendarView: React.FC<AdminCalendarViewProps> = ({
     const [selectedAppointmentForEdit, setSelectedAppointmentForEdit] = useState<AppointmentWithDetails | null>(null);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isDraggingInternally, setIsDraggingInternally] = useState(false);
+    const [selectedAppIds, setSelectedAppIds] = useState<string[]>([]);
 
     const weekDays = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
     const weekDaysShort = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
@@ -165,8 +166,42 @@ const AdminCalendarView: React.FC<AdminCalendarViewProps> = ({
 
     const handleEditAppointment = (app: AppointmentWithDetails) => {
         if (draggedAppointment || isUpdating || isDraggingInternally) return;
+
+        // If some items are already selected, clicking a card toggles its selection instead of editing
+        if (selectedAppIds.length > 0) {
+            handleToggleSelection(app.id);
+            return;
+        }
+
         setSelectedAppointmentForEdit(app);
         setIsEditModalOpen(true);
+    };
+
+    const handleToggleSelection = (id: string) => {
+        setSelectedAppIds(prev =>
+            prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+        );
+    };
+
+    const handleBulkDelete = async () => {
+        if (selectedAppIds.length === 0 || isUpdating) return;
+
+        const confirmDelete = window.confirm(`Deseja realmente excluir os ${selectedAppIds.length} agendamentos selecionados?`);
+        if (!confirmDelete) return;
+
+        setIsUpdating(true);
+        try {
+            // Using Promise.all to delete each selected appointment
+            await Promise.all(selectedAppIds.map(id => deleteAppointment(id)));
+            setSelectedAppIds([]);
+            if (onRefresh) onRefresh();
+            alert('✅ Agendamentos excluídos com sucesso!');
+        } catch (err) {
+            console.error('Error deleting appointments:', err);
+            alert('❌ Erro ao excluir agendamentos.');
+        } finally {
+            setIsUpdating(false);
+        }
     };
 
     const weekDates = getWeekDays(currentDate);
@@ -261,73 +296,99 @@ const AdminCalendarView: React.FC<AdminCalendarViewProps> = ({
                                 <p className="text-[10px]">Nenhum</p>
                             </div>
                         ) : (
-                            filteredAppointments.map(app => (
-                                <div
-                                    key={app.id}
-                                    draggable={!isUpdating}
-                                    onDragStart={(e) => handleDragStart(e, app)}
-                                    onDragEnd={handleDragEnd}
-                                    className={`
-                                        p-2 rounded-lg bg-white dark:bg-gray-700 shadow-sm border-l-3 cursor-grab active:cursor-grabbing
-                                        transition-all duration-150 hover:shadow hover:scale-[1.01]
-                                        ${app.status === 'CONFIRMED' ? 'border-green-500' : app.status === 'PENDING' ? 'border-orange-500' : 'border-blue-500'}
-                                        ${draggedAppointment?.id === app.id ? 'opacity-40 scale-95' : ''}
-                                        ${isUpdating ? 'pointer-events-none opacity-60' : ''}
-                                    `}
-                                    onClick={() => handleEditAppointment(app)}
-                                >
-                                    <div className="flex items-center gap-1.5">
-                                        <div className="size-6 shrink-0 rounded bg-slate-200 dark:bg-gray-600 overflow-hidden flex items-center justify-center">
-                                            {app.pet?.image_url ? (
-                                                <div className="w-full h-full bg-cover bg-center" style={{ backgroundImage: `url("${app.pet.image_url}")` }}></div>
-                                            ) : (
-                                                <span className="material-symbols-outlined text-xs text-gray-400">pets</span>
-                                            )}
+                            filteredAppointments.map(app => {
+                                const isSelected = selectedAppIds.includes(app.id);
+                                return (
+                                    <div
+                                        key={app.id}
+                                        draggable={!isUpdating && selectedAppIds.length === 0}
+                                        onDragStart={(e) => handleDragStart(e, app)}
+                                        onDragEnd={handleDragEnd}
+                                        className={`
+                                                    p-2 rounded-lg bg-white dark:bg-gray-700 shadow-sm border-l-3 cursor-grab active:cursor-grabbing relative
+                                                    transition-all duration-150 hover:shadow hover:scale-[1.01]
+                                                    ${app.status === 'CONFIRMED' ? 'border-green-500' : app.status === 'PENDING' ? 'border-orange-500' : 'border-blue-500'}
+                                                    ${draggedAppointment?.id === app.id ? 'opacity-40 scale-95' : ''}
+                                                    ${isUpdating ? 'pointer-events-none opacity-60' : ''}
+                                                    ${isSelected ? 'ring-2 ring-primary ring-inset bg-primary/5 dark:bg-primary/10' : ''}
+                                                `}
+                                        onClick={() => handleEditAppointment(app)}
+                                    >
+                                        {/* Selection Checkbox */}
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleToggleSelection(app.id);
+                                            }}
+                                            className={`absolute top-2 right-2 size-4 rounded-full border flex items-center justify-center transition-colors ${isSelected ? 'bg-primary border-primary text-white' : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800'}`}
+                                        >
+                                            {isSelected && <span className="material-symbols-outlined text-[10px] font-bold">check</span>}
+                                        </button>
+
+                                        <div className="flex items-center gap-1.5">
+                                            <div className="size-6 shrink-0 rounded bg-slate-200 dark:bg-gray-600 overflow-hidden flex items-center justify-center">
+                                                {app.pet?.image_url ? (
+                                                    <div className="w-full h-full bg-cover bg-center" style={{ backgroundImage: `url("${app.pet.image_url}")` }}></div>
+                                                ) : (
+                                                    <span className="material-symbols-outlined text-xs text-gray-400">pets</span>
+                                                )}
+                                            </div>
+                                            <div className="flex-1 min-w-0 pr-4">
+                                                <p className="font-bold text-[11px] truncate text-gray-900 dark:text-white leading-tight">
+                                                    {app.pet?.name || 'Pet'}
+                                                </p>
+                                                <p className="text-[9px] text-gray-500 dark:text-gray-400 truncate leading-tight">
+                                                    {app.profile?.full_name?.split(' ')[0]}
+                                                    {app.profile?.neighborhood && <span className="text-primary ml-0.5">({app.profile.neighborhood})</span>}
+                                                </p>
+                                            </div>
                                         </div>
-                                        <div className="flex-1 min-w-0">
-                                            <p className="font-bold text-[11px] truncate text-gray-900 dark:text-white leading-tight">
-                                                {app.pet?.name || 'Pet'}
-                                            </p>
-                                            <p className="text-[9px] text-gray-500 dark:text-gray-400 truncate leading-tight">
-                                                {app.profile?.full_name?.split(' ')[0]}
-                                                {app.profile?.neighborhood && <span className="text-primary ml-0.5">({app.profile.neighborhood})</span>}
-                                            </p>
+                                        <div className="mt-1 flex items-center justify-between">
+                                            <span className="text-[9px] text-gray-400">
+                                                {new Date(app.scheduled_date + 'T00:00:00').toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit' })}
+                                            </span>
+                                            <span className="text-[10px] font-bold text-primary">{app.scheduled_time.substring(0, 5)}</span>
                                         </div>
                                     </div>
-                                    <div className="mt-1 flex items-center justify-between">
-                                        <span className="text-[9px] text-gray-400">
-                                            {new Date(app.scheduled_date + 'T00:00:00').toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit' })}
-                                        </span>
-                                        <span className="text-[10px] font-bold text-primary">{app.scheduled_time.substring(0, 5)}</span>
-                                    </div>
-                                </div>
-                            ))
+                                );
+                            })
                         )}
                     </div>
 
-                    {/* Trash Drop Zone */}
-                    <div
-                        onDragOver={(e) => {
-                            e.preventDefault();
-                            setIsOverTrash(true);
-                        }}
-                        onDragLeave={() => setIsOverTrash(false)}
-                        onDrop={handleTrashDrop}
-                        className={`
-                            px-4 py-3 border-t transition-all duration-200 flex items-center justify-center gap-2
-                            ${isOverTrash
-                                ? 'bg-red-500 text-white py-6 border-red-600'
-                                : 'bg-gray-50 dark:bg-gray-800 text-red-500 border-gray-200 dark:border-gray-700'}
-                            ${draggedAppointment ? 'animate-pulse' : ''}
-                        `}
-                    >
-                        <span className={`material-symbols-outlined ${isOverTrash ? 'text-2xl scale-125' : 'text-xl'} transition-transform`}>
-                            delete
-                        </span>
-                        <span className="text-xs font-bold uppercase tracking-wider">
-                            {isOverTrash ? 'Soltar para excluir' : 'Excluir'}
-                        </span>
-                    </div>
+                    {/* Bulk Delete Button / Trash Zone */}
+                    {selectedAppIds.length > 0 ? (
+                        <button
+                            onClick={handleBulkDelete}
+                            disabled={isUpdating}
+                            className="px-4 py-4 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex items-center justify-center gap-2 hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors text-red-600 group active:scale-[0.98]"
+                        >
+                            <span className="material-symbols-outlined text-xl group-hover:scale-110 transition-transform">delete</span>
+                            <span className="text-xs font-bold uppercase tracking-wider">Excluir ({selectedAppIds.length})</span>
+                        </button>
+                    ) : (
+                        <div
+                            onDragOver={(e) => {
+                                e.preventDefault();
+                                setIsOverTrash(true);
+                            }}
+                            onDragLeave={() => setIsOverTrash(false)}
+                            onDrop={handleTrashDrop}
+                            className={`
+                                        px-4 py-3 border-t transition-all duration-200 flex items-center justify-center gap-2
+                                        ${isOverTrash
+                                    ? 'bg-red-500 text-white py-6 border-red-600'
+                                    : 'bg-gray-50 dark:bg-gray-800 text-red-500 border-gray-200 dark:border-gray-700'}
+                                        ${draggedAppointment ? 'animate-pulse' : ''}
+                                    `}
+                        >
+                            <span className={`material-symbols-outlined ${isOverTrash ? 'text-2xl scale-125' : 'text-xl'} transition-transform`}>
+                                delete
+                            </span>
+                            <span className="text-xs font-bold uppercase tracking-wider">
+                                {isOverTrash ? 'Soltar para excluir' : 'Excluir'}
+                            </span>
+                        </div>
+                    )}
                 </div>
 
                 {/* Fixed Trash Overlay (Visible when dragging and sidebar is collapsed) */}
