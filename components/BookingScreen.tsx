@@ -377,26 +377,28 @@ const BookingScreen: React.FC<BookingProps> = ({ service: initialService, onBack
         </section>
       </main>
 
-      <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white dark:bg-gray-900 border-t border-gray-200 p-4 pb-6 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-30">
-        <div className="flex items-center justify-between mb-4 px-1">
-          <div className="flex flex-col">
-            <span className="text-[10px] text-gray-500 font-medium uppercase tracking-wide">Total a pagar</span>
-            <span className="text-xl font-bold">R$ {calculateTotal().toFixed(2)}</span>
+      {isServiceConfirmed && selectedPetId && selectedDate && selectedTime && (
+        <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white dark:bg-gray-900 border-t border-gray-200 p-4 pb-6 shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.1)] z-30 animate-in slide-in-from-bottom duration-300">
+          <div className="flex items-center justify-between mb-4 px-1">
+            <div className="flex flex-col">
+              <span className="text-[10px] text-gray-500 font-medium uppercase tracking-wide">Total a pagar</span>
+              <span className="text-xl font-bold">R$ {calculateTotal().toFixed(2)}</span>
+            </div>
+            <div className="text-right">
+              <span className="text-[10px] text-gray-500 block">Agendado para</span>
+              <span className="text-xs font-semibold text-primary">{selectedDate} às {selectedTime}</span>
+            </div>
           </div>
-          <div className="text-right">
-            <span className="text-[10px] text-gray-500 block">Agendado para</span>
-            <span className="text-xs font-semibold text-primary">{selectedDate} às {selectedTime}</span>
-          </div>
+          <button
+            onClick={handleConfirm}
+            disabled={saving || pets.length === 0}
+            className="w-full bg-primary hover:bg-primary-dark text-white font-bold text-lg py-4 rounded-xl shadow-lg shadow-primary/30 flex items-center justify-center gap-2 transition-transform active:scale-[0.98] disabled:opacity-70"
+          >
+            {saving ? 'Criando...' : 'Confirmar Agendamento'}
+            <span className="material-symbols-outlined">arrow_forward</span>
+          </button>
         </div>
-        <button
-          onClick={handleConfirm}
-          disabled={saving || pets.length === 0}
-          className="w-full bg-primary hover:bg-primary-dark text-white font-bold text-lg py-4 rounded-xl shadow-lg shadow-primary/30 flex items-center justify-center gap-2 transition-transform active:scale-[0.98] disabled:opacity-70"
-        >
-          {saving ? 'Criando...' : 'Confirmar Agendamento'}
-          <span className="material-symbols-outlined">arrow_forward</span>
-        </button>
-      </div>
+      )}
     </div>
   );
 };
