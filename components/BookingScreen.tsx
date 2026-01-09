@@ -92,9 +92,9 @@ const BookingScreen: React.FC<BookingProps> = ({ service: initialService, onBack
         return;
       }
 
-      let noteContent = 'Serviços Selecionados:\n';
+      let noteContent = `Serviços Selecionados:\n`;
       selectedServices.forEach(s => {
-        noteContent += `- ${s.name}${s.subtypeName ? ` (${s.subtypeName})` : ''}: R$ ${s.price.toFixed(2)}\n`;
+        noteContent += `- ${s.name}: R$ ${s.price.toFixed(2)}\n`;
       });
 
       if (selectedExtras.length > 0) {
@@ -138,6 +138,7 @@ const BookingScreen: React.FC<BookingProps> = ({ service: initialService, onBack
   };
 
   const toggleService = (svcId: string, name: string, price: number, subtypeName: string | null) => {
+    setIsServiceConfirmed(false); // Reset confirmation on any change
     setSelectedServices(prev => {
       const isAlreadySelected = prev.find(s => s.serviceId === svcId && s.subtypeName === subtypeName);
       if (isAlreadySelected) {
