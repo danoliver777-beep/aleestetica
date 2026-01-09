@@ -101,7 +101,7 @@ const AppContent: React.FC = () => {
   };
 
   return (
-    <div className="max-w-md mx-auto min-h-screen bg-background-light dark:bg-background-dark shadow-2xl overflow-x-hidden relative">
+    <div className="max-w-md mx-auto min-h-screen bg-background-light dark:bg-background-dark border-x-4 border-black dark:border-white shadow-[12px_0px_0px_0px_rgba(0,0,0,0.2)] overflow-x-hidden relative">
       {renderScreen()}
     </div>
   );
