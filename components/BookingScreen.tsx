@@ -180,7 +180,7 @@ const BookingScreen: React.FC<BookingProps> = ({ service: initialService, onBack
             Serviço
           </h2>
           <div className="flex flex-col gap-4">
-            {services.map((svc) => (
+            {services.filter(svc => svc.id === initialService?.id).map((svc) => (
               <div key={svc.id} className="bg-white dark:bg-gray-800 rounded-2xl p-4 border border-gray-100 dark:border-gray-700 shadow-sm transition-all hover:border-primary/20">
                 {/* Main Service Header */}
                 <div className="flex justify-between items-center mb-3">
@@ -198,8 +198,8 @@ const BookingScreen: React.FC<BookingProps> = ({ service: initialService, onBack
                   disabled={isServiceConfirmed}
                   onClick={() => toggleService(svc.id, svc.name, svc.price, null)}
                   className={`w-full py-2.5 px-4 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-2 ${selectedServices.some(s => s.serviceId === svc.id && s.subtypeName === null)
-                      ? 'bg-primary text-white border-primary shadow-md shadow-primary/20'
-                      : 'bg-gray-50 dark:bg-gray-700 border-gray-100 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600'
+                    ? 'bg-primary text-white border-primary shadow-md shadow-primary/20'
+                    : 'bg-gray-50 dark:bg-gray-700 border-gray-100 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600'
                     }`}
                 >
                   {selectedServices.some(s => s.serviceId === svc.id && s.subtypeName === null) && (
@@ -223,8 +223,8 @@ const BookingScreen: React.FC<BookingProps> = ({ service: initialService, onBack
                             disabled={isServiceConfirmed}
                             onClick={() => toggleService(svc.id, `${svc.name} (${st.name})`, st.price, st.name)}
                             className={`flex items-center justify-between p-3 rounded-xl border transition-all ${isSelected
-                                ? 'bg-blue-50 dark:bg-blue-900/10 border-primary text-primary shadow-sm'
-                                : 'bg-white dark:bg-gray-900 border-gray-100 dark:border-gray-700 text-gray-600 dark:text-gray-400'
+                              ? 'bg-blue-50 dark:bg-blue-900/10 border-primary text-primary shadow-sm'
+                              : 'bg-white dark:bg-gray-900 border-gray-100 dark:border-gray-700 text-gray-600 dark:text-gray-400'
                               }`}
                           >
                             <div className="flex items-center gap-2">
