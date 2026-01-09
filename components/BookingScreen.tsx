@@ -231,9 +231,9 @@ const BookingScreen: React.FC<BookingProps> = ({ service: initialService, onBack
                               <span className={`material-symbols-outlined text-[20px] ${isSelected ? 'text-primary' : 'text-gray-300'}`}>
                                 {isSelected ? 'check_circle' : 'add_circle'}
                               </span>
-                              <span className="text-xs font-semibold">{st.name}</span>
+                              <span className="text-sm font-bold">{st.name}</span>
                             </div>
-                            <span className="text-xs font-bold">R$ {st.price.toFixed(2)}</span>
+                            <span className="text-sm font-bold">R$ {st.price.toFixed(2)}</span>
                           </button>
                         );
                       })}
