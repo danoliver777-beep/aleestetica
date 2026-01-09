@@ -21,22 +21,28 @@
             "primary": "#135bec",
             "primary-dark": "#0e45b5",
             "secondary": "#FF9F43",
-            "background-light": "#f6f6f8",
-            "background-dark": "#101622",
+            "background-light": "#f0f0f0",
+            "background-dark": "#121212",
             "surface-light": "#ffffff",
-            "surface-dark": "#1a2230",
+            "surface-dark": "#1e1e1e",
           },
           fontFamily: {
             "display": ["Plus Jakarta Sans", "Manrope", "sans-serif"],
             "sans": ["Plus Jakarta Sans", "sans-serif"]
           },
           borderRadius: {
-            "DEFAULT": "0.5rem",
-            "lg": "0.75rem",
-            "xl": "1rem",
-            "2xl": "1.5rem",
+            "DEFAULT": "2px",
+            "sm": "2px",
+            "lg": "4px",
+            "xl": "8px",
+            "2xl": "12px",
             "full": "9999px"
           },
+          boxShadow: {
+            "brutalist": "4px 4px 0px 0px rgba(0,0,0,1)",
+            "brutalist-sm": "2px 2px 0px 0px rgba(0,0,0,1)",
+            "brutalist-lg": "8px 8px 0px 0px rgba(0,0,0,1)",
+          }
         },
       },
     }
@@ -55,12 +61,99 @@
       min-height: 100dvh;
     }
 
+    /* --- Neobrutalist Global Core --- */
+
+    /* Global Card & Button override */
+    .rounded-2xl,
+    .rounded-xl,
+    .rounded-lg,
+    .rounded-md {
+      border: 3px solid #000 !important;
+      box-shadow: 4px 4px 0px 0px #000 !important;
+      background-image: none !important;
+      /* Remove gradients */
+      transition: all 0.1s ease-in-out !important;
+    }
+
+    /* Dark Mode overrides */
+    .dark .rounded-2xl,
+    .dark .rounded-xl,
+    .dark .rounded-lg,
+    .dark .rounded-md {
+      border: 3px solid #fff !important;
+      box-shadow: 4px 4px 0px 0px #fff !important;
+    }
+
+    /* Buttons */
+    button {
+      text-transform: uppercase !important;
+      letter-spacing: 0.05em !important;
+    }
+
+    button.bg-primary,
+    button.bg-green-500,
+    button.bg-blue-500,
+    button.bg-secondary {
+      border: 3px solid #000 !important;
+      box-shadow: 3px 3px 0px 0px #000 !important;
+    }
+
+    .dark button.bg-primary,
+    .dark button.bg-green-500,
+    .dark button.bg-blue-500 {
+      border: 3px solid #fff !important;
+      box-shadow: 3px 3px 0px 0px #fff !important;
+    }
+
+    button:active {
+      transform: translate(2px, 2px) !important;
+      box-shadow: 1px 1px 0px 0px #000 !important;
+    }
+
+    .dark button:active {
+      box-shadow: 1px 1px 0px 0px #fff !important;
+    }
+
+    /* Inputs */
+    input,
+    select,
+    textarea {
+      border: 3px solid #000 !important;
+      border-radius: 4px !important;
+      box-shadow: 2px 2px 0px 0px rgba(0, 0, 0, 0.1) !important;
+    }
+
+    .dark input,
+    .dark select,
+    .dark textarea {
+      border: 3px solid #fff !important;
+      background-color: #1a1a1a !important;
+      color: #fff !important;
+    }
+
+    /* Typography */
+    h1,
+    h2,
+    h3 {
+      text-transform: uppercase !important;
+      letter-spacing: -0.02em !important;
+    }
+
+    .text-primary {
+      color: #135bec !important;
+    }
+
+    .dark .text-primary {
+      color: #4d8df5 !important;
+    }
+
+    /* Material Icons */
     .material-symbols-outlined {
-      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      font-variation-settings: 'FILL' 0, 'wght' 700, 'GRAD' 0, 'opsz' 24 !important;
     }
 
     .material-symbols-outlined.filled {
-      font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      font-variation-settings: 'FILL' 1, 'wght' 700, 'GRAD' 0, 'opsz' 24 !important;
     }
 
     /* Animations */
@@ -77,7 +170,7 @@
     }
 
     .animate-slide-up {
-      animation: slide-up 0.3s ease-out forwards;
+      animation: slide-up 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
     }
   </style>
   <script type="importmap">
