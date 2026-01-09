@@ -41,7 +41,7 @@ const AdminBookingModal: React.FC<AdminBookingModalProps> = ({
 
     // Recurrence States
     const [isRecurring, setIsRecurring] = useState(false);
-    const [recurrenceType, setRecurrenceType] = useState<'WEEKLY' | 'MONTHLY' | 'YEARLY'>('WEEKLY');
+    const [recurrenceType, setRecurrenceType] = useState<'WEEKLY' | 'BIWEEKLY' | 'MONTHLY' | 'YEARLY'>('WEEKLY');
     const [recurrenceCount, setRecurrenceCount] = useState(1);
 
     // UI States
@@ -115,6 +115,8 @@ const AdminBookingModal: React.FC<AdminBookingModalProps> = ({
 
                 if (recurrenceType === 'WEEKLY') {
                     nextDate.setDate(nextDate.getDate() + (7 * i));
+                } else if (recurrenceType === 'BIWEEKLY') {
+                    nextDate.setDate(nextDate.getDate() + (14 * i));
                 } else if (recurrenceType === 'MONTHLY') {
                     nextDate.setMonth(nextDate.getMonth() + i);
                 } else if (recurrenceType === 'YEARLY') {
@@ -413,16 +415,16 @@ const AdminBookingModal: React.FC<AdminBookingModalProps> = ({
                                         <div>
                                             <label className="block text-xs font-semibold text-gray-500 mb-1">Frequência</label>
                                             <div className="flex gap-2">
-                                                {(['WEEKLY', 'MONTHLY', 'YEARLY'] as const).map(type => (
+                                                {(['WEEKLY', 'BIWEEKLY', 'MONTHLY', 'YEARLY'] as const).map(type => (
                                                     <button
                                                         key={type}
                                                         onClick={() => setRecurrenceType(type)}
-                                                        className={`flex-1 py-2 text-xs font-bold rounded-lg transition-colors ${recurrenceType === type
+                                                        className={`flex-1 py-2 text-[10px] font-bold rounded-lg transition-colors ${recurrenceType === type
                                                             ? 'bg-primary text-white'
                                                             : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-100'
                                                             }`}
                                                     >
-                                                        {type === 'WEEKLY' ? 'Semanal' : type === 'MONTHLY' ? 'Mensal' : 'Anual'}
+                                                        {type === 'WEEKLY' ? 'Semanal' : type === 'BIWEEKLY' ? 'Quinzenal' : type === 'MONTHLY' ? 'Mensal' : 'Anual'}
                                                     </button>
                                                 ))}
                                             </div>
