@@ -9,7 +9,7 @@ interface AdminBottomNavProps {
 
 const AdminBottomNav: React.FC<AdminBottomNavProps> = ({ active, onNavigate }) => {
     return (
-        <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md bg-white dark:bg-surface-dark border-t-4 border-black dark:border-white px-6 py-3 pb-6 shadow-[0_-8px_0px_0px_rgba(0,0,0,1)] dark:shadow-[0_-8px_0px_0px_rgba(255,255,255,1)] z-50">
+        <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md bg-white dark:bg-surface-dark border-t border-gray-200 dark:border-gray-800 px-6 py-3 pb-6 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-50">
             <ul className="flex justify-around items-center">
                 <li>
                     <button

@@ -9,7 +9,7 @@ interface BottomNavProps {
 
 const BottomNav: React.FC<BottomNavProps> = ({ active, onNavigate }) => {
   return (
-    <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white dark:bg-surface-dark border-t-4 border-black dark:border-white pb-safe pt-2 px-4 shadow-[0_-8px_0px_0px_rgba(0,0,0,1)] dark:shadow-[0_-8px_0px_0px_rgba(255,255,255,1)] z-[50]">
+    <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white dark:bg-surface-dark border-t border-gray-100 dark:border-gray-800 pb-safe pt-2 px-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-[50]">
       <div className="flex justify-between items-center h-16">
         <button
           onClick={() => onNavigate('HOME')}
@@ -31,10 +31,10 @@ const BottomNav: React.FC<BottomNavProps> = ({ active, onNavigate }) => {
           onClick={() => onNavigate('BOOKING')}
           className="flex flex-col items-center justify-center -mt-10"
         >
-          <div className="bg-primary text-white rounded-full p-3 shadow-[4px_4px_0px_0px_#000] border-4 border-black dark:border-white active:scale-95 transition-transform">
+          <div className="bg-primary text-white rounded-full p-3 shadow-lg shadow-blue-500/40 border-4 border-background-light dark:border-background-dark active:scale-95 transition-transform">
             <span className="material-symbols-outlined text-[28px]">add</span>
           </div>
-          <span className="text-[10px] font-bold text-black dark:text-white mt-1 uppercase">Novo</span>
+          <span className="text-[10px] font-medium text-gray-400 mt-1">Novo</span>
         </button>
 
         <button

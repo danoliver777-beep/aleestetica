@@ -378,7 +378,7 @@ const BookingScreen: React.FC<BookingProps> = ({ service: initialService, onBack
       </main>
 
       {isServiceConfirmed && selectedPetId && selectedDate && selectedTime && (
-        <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white dark:bg-gray-900 border-t-4 border-black dark:border-white p-4 pb-6 shadow-[0_-8px_0px_0px_rgba(0,0,0,1)] dark:shadow-[0_-8px_0px_0px_rgba(255,255,255,1)] z-30 animate-in slide-in-from-bottom duration-300">
+        <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white dark:bg-gray-900 border-t border-gray-200 p-4 pb-6 shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.1)] z-30 animate-in slide-in-from-bottom duration-300">
           <div className="flex items-center justify-between mb-4 px-1">
             <div className="flex flex-col">
               <span className="text-[10px] text-gray-500 font-medium uppercase tracking-wide">Total a pagar</span>
