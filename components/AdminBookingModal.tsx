@@ -41,7 +41,7 @@ const AdminBookingModal: React.FC<AdminBookingModalProps> = ({
 
     // Recurrence States
     const [isRecurring, setIsRecurring] = useState(false);
-    const [recurrenceType, setRecurrenceType] = useState<'WEEKLY' | 'BIWEEKLY' | 'MONTHLY' | 'YEARLY'>('WEEKLY');
+    const [recurrenceType, setRecurrenceType] = useState<'WEEKLY' | 'BIWEEKLY' | 'MONTHLY'>('WEEKLY');
     const [recurrenceCount, setRecurrenceCount] = useState(1);
 
     // UI States
@@ -104,26 +104,30 @@ const AdminBookingModal: React.FC<AdminBookingModalProps> = ({
 
     const calculateDates = () => {
         const dates: string[] = [];
-        let currentDate = new Date(date + 'T00:00:00');
+        // Use local parts to avoid timezone shift
+        const [year, month, day] = date.split('-').map(Number);
+        const baseDate = new Date(year, month - 1, day);
 
         // First Appointment
-        dates.push(currentDate.toISOString().split('T')[0]);
+        dates.push(date);
 
         if (isRecurring && recurrenceCount > 1) {
             for (let i = 1; i < recurrenceCount; i++) {
-                const nextDate = new Date(currentDate);
+                const nextDate = new Date(baseDate);
 
                 if (recurrenceType === 'WEEKLY') {
-                    nextDate.setDate(nextDate.getDate() + (7 * i));
+                    nextDate.setDate(baseDate.getDate() + (7 * i));
                 } else if (recurrenceType === 'BIWEEKLY') {
-                    nextDate.setDate(nextDate.getDate() + (14 * i));
+                    nextDate.setDate(baseDate.getDate() + (14 * i));
                 } else if (recurrenceType === 'MONTHLY') {
-                    nextDate.setMonth(nextDate.getMonth() + i);
-                } else if (recurrenceType === 'YEARLY') {
-                    nextDate.setFullYear(nextDate.getFullYear() + i);
+                    nextDate.setMonth(baseDate.getMonth() + i);
                 }
 
-                dates.push(nextDate.toISOString().split('T')[0]);
+                // Format back to YYYY-MM-DD
+                const y = nextDate.getFullYear();
+                const m = String(nextDate.getMonth() + 1).padStart(2, '0');
+                const d = String(nextDate.getDate()).padStart(2, '0');
+                dates.push(`${y}-${m}-${d}`);
             }
         }
         return dates;
@@ -411,20 +415,21 @@ const AdminBookingModal: React.FC<AdminBookingModalProps> = ({
                                 </div>
 
                                 {isRecurring && (
-                                    <div className="space-y-3 animate-in slide-in-from-top-2">
+                                    <div className="space-y-4 animate-in slide-in-from-top-2">
                                         <div>
                                             <label className="block text-xs font-semibold text-gray-500 mb-1">Frequência</label>
                                             <div className="flex gap-2">
-                                                {(['WEEKLY', 'BIWEEKLY', 'MONTHLY', 'YEARLY'] as const).map(type => (
+                                                {(['WEEKLY', 'BIWEEKLY', 'MONTHLY'] as const).map(type => (
                                                     <button
                                                         key={type}
+                                                        type="button"
                                                         onClick={() => setRecurrenceType(type)}
                                                         className={`flex-1 py-2 text-[10px] font-bold rounded-lg transition-colors ${recurrenceType === type
                                                             ? 'bg-primary text-white'
                                                             : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-100'
                                                             }`}
                                                     >
-                                                        {type === 'WEEKLY' ? 'Semanal' : type === 'BIWEEKLY' ? 'Quinzenal' : type === 'MONTHLY' ? 'Mensal' : 'Anual'}
+                                                        {type === 'WEEKLY' ? 'Semanal' : type === 'BIWEEKLY' ? 'Quinzenal' : 'Mensal'}
                                                     </button>
                                                 ))}
                                             </div>
@@ -432,23 +437,42 @@ const AdminBookingModal: React.FC<AdminBookingModalProps> = ({
 
                                         <div>
                                             <label className="block text-xs font-semibold text-gray-500 mb-1">
-                                                Repetições (Total de agendamentos)
+                                                Quantidade de Agendamentos
                                             </label>
-                                            <div className="flex items-center gap-3">
-                                                <input
-                                                    type="range"
-                                                    min="2"
-                                                    max="12"
-                                                    value={recurrenceCount}
-                                                    onChange={(e) => setRecurrenceCount(Number(e.target.value))}
-                                                    className="flex-1 accent-primary"
-                                                />
-                                                <span className="w-8 text-center font-bold text-primary">{recurrenceCount}x</span>
+                                            <div className="flex items-center gap-4 bg-white dark:bg-gray-900 p-2 rounded-xl border border-gray-200 dark:border-gray-700">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setRecurrenceCount(prev => Math.max(1, prev - 1))}
+                                                    className="size-10 flex items-center justify-center rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200"
+                                                >
+                                                    <span className="material-symbols-outlined">remove</span>
+                                                </button>
+                                                <div className="flex-1 text-center font-bold text-lg select-none">
+                                                    {recurrenceCount}x
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setRecurrenceCount(prev => Math.min(12, prev + 1))}
+                                                    className="size-10 flex items-center justify-center rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200"
+                                                >
+                                                    <span className="material-symbols-outlined">add</span>
+                                                </button>
                                             </div>
-                                            <p className="text-xs text-gray-400 mt-1">
-                                                Serão criados {recurrenceCount} agendamentos.
-                                            </p>
                                         </div>
+
+                                        {recurrenceCount > 1 && (
+                                            <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg border border-blue-100 dark:border-blue-800/50">
+                                                <p className="text-xs font-bold text-blue-700 dark:text-blue-400 mb-1">Próximas datas:</p>
+                                                <div className="flex flex-wrap gap-2 text-[10px] text-blue-600 dark:text-blue-300 font-medium">
+                                                    {calculateDates().slice(0, 4).map((d, idx) => (
+                                                        <span key={d} className="bg-white/50 dark:bg-black/20 px-2 py-1 rounded">
+                                                            {idx === 0 ? 'Hoje: ' : ''}{new Date(d + 'T00:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
+                                                        </span>
+                                                    ))}
+                                                    {recurrenceCount > 4 && <span>...</span>}
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 )}
                             </div>
