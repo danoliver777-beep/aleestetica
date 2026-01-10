@@ -476,7 +476,7 @@ const AdminSettingsScreen: React.FC<AdminSettingsProps> = ({ onNavigate }) => {
             {activeModal && (
                 <div className="fixed inset-0 z-50 bg-black/50 flex items-end justify-center animate-in fade-in duration-200" onClick={closeModal}>
                     <div
-                        className="bg-white w-full max-w-md rounded-t-3xl p-6 pb-10 max-h-[85vh] overflow-y-auto animate-in slide-in-from-bottom duration-300"
+                        className="bg-white w-full max-w-md rounded-t-3xl p-6 pb-28 max-h-[85vh] overflow-y-auto animate-in slide-in-from-bottom duration-300"
                         onClick={e => e.stopPropagation()}
                     >
                         {/* Notifications Modal */}
@@ -860,8 +860,8 @@ const AdminSettingsScreen: React.FC<AdminSettingsProps> = ({ onNavigate }) => {
                                                                 type="button"
                                                                 onClick={() => setNewPetType(type)}
                                                                 className={`flex-1 py-2 rounded-lg text-xs font-bold transition-colors ${newPetType === type
-                                                                        ? 'bg-green-500 text-white'
-                                                                        : 'bg-white border border-gray-200 text-gray-600'
+                                                                    ? 'bg-green-500 text-white'
+                                                                    : 'bg-white border border-gray-200 text-gray-600'
                                                                     }`}
                                                             >
                                                                 {type === 'dog' ? 'Cachorro' : type === 'cat' ? 'Gato' : 'Outro'}
