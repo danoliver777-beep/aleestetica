@@ -267,30 +267,71 @@ const AdminBookingModal: React.FC<AdminBookingModalProps> = ({
                                 <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
                                     1. Selecione o Cliente
                                 </label>
-                                <input
-                                    type="text"
-                                    placeholder="Buscar cliente..."
-                                    value={searchTerm}
-                                    onChange={(e) => {
-                                        setSearchTerm(e.target.value);
-                                        setSelectedProfileId('');
-                                        setPets([]);
-                                        setSelectedPetId('');
-                                    }}
-                                    className="w-full mb-2 p-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-primary"
-                                />
-                                <select
-                                    value={selectedProfileId}
-                                    onChange={(e) => setSelectedProfileId(e.target.value)}
-                                    className="w-full p-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-primary"
-                                    size={4}
-                                >
-                                    {filteredProfiles.map(profile => (
-                                        <option key={profile.id} value={profile.id} className="p-2">
-                                            {profile.full_name || 'Sem nome'} ({profile.neighborhood || 'Sem bairro'})
-                                        </option>
-                                    ))}
-                                </select>
+                                {selectedProfileId ? (
+                                    <div className="flex items-center justify-between p-3 rounded-xl bg-primary/10 border border-primary animate-in zoom-in-95">
+                                        <div className="flex items-center gap-3">
+                                            <div className="size-10 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold">
+                                                {profiles.find(p => p.id === selectedProfileId)?.full_name?.[0] || 'U'}
+                                            </div>
+                                            <div>
+                                                <p className="text-sm font-bold text-gray-900 dark:text-white">
+                                                    {profiles.find(p => p.id === selectedProfileId)?.full_name || 'Sem nome'}
+                                                </p>
+                                                <p className="text-xs text-gray-500 dark:text-gray-400">
+                                                    {profiles.find(p => p.id === selectedProfileId)?.neighborhood || 'Sem bairro'}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <button
+                                            onClick={() => {
+                                                setSelectedProfileId('');
+                                                setSearchTerm('');
+                                                setPets([]);
+                                                setSelectedPetId('');
+                                            }}
+                                            className="text-xs font-bold text-red-500 hover:text-red-600 p-2"
+                                        >
+                                            Alterar
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <>
+                                        <input
+                                            type="text"
+                                            placeholder="Digitar nome do cliente..."
+                                            value={searchTerm}
+                                            onChange={(e) => {
+                                                setSearchTerm(e.target.value);
+                                                setSelectedProfileId('');
+                                                setPets([]);
+                                                setSelectedPetId('');
+                                            }}
+                                            className="w-full mb-2 p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-primary shadow-inner"
+                                        />
+                                        {searchTerm.length > 0 && (
+                                            <div className="w-full max-h-48 overflow-y-auto rounded-xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm">
+                                                {filteredProfiles.length === 0 ? (
+                                                    <p className="p-4 text-sm text-gray-500 text-center">Nenhum cliente encontrado.</p>
+                                                ) : (
+                                                    filteredProfiles.map(profile => (
+                                                        <button
+                                                            key={profile.id}
+                                                            type="button"
+                                                            onClick={() => {
+                                                                setSelectedProfileId(profile.id);
+                                                                setSearchTerm(''); // Clear search after selection
+                                                            }}
+                                                            className="w-full p-3 flex flex-col items-start border-b border-gray-50 dark:border-gray-700 last:border-0 hover:bg-primary/5 transition-colors text-left"
+                                                        >
+                                                            <span className="text-sm font-bold text-gray-800 dark:text-gray-200">{profile.full_name || 'Sem nome'}</span>
+                                                            <span className="text-xs text-gray-500">{profile.neighborhood || 'Sem bairro'}</span>
+                                                        </button>
+                                                    ))
+                                                )}
+                                            </div>
+                                        )}
+                                    </>
+                                )}
                             </div>
 
                             {/* 2. Pet */}
