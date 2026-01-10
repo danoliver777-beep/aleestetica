@@ -9,6 +9,7 @@ const LoginScreen: React.FC = () => {
   const [isSignUp, setIsSignUp] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -107,13 +108,19 @@ const LoginScreen: React.FC = () => {
               <input
                 className="w-full h-14 pl-12 pr-12 rounded-xl bg-white dark:bg-surface-dark border-transparent focus:border-primary focus:ring-2 focus:ring-primary/20 text-gray-900 dark:text-white placeholder:text-gray-400 font-medium transition-all shadow-sm outline-none"
                 placeholder="••••••••"
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
-              <button className="absolute right-4 text-gray-400" type="button">
-                <span className="material-symbols-outlined text-[20px]">visibility</span>
+              <button
+                className="absolute right-4 text-gray-400 hover:text-primary transition-colors"
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+              >
+                <span className="material-symbols-outlined text-[20px]">
+                  {showPassword ? 'visibility_off' : 'visibility'}
+                </span>
               </button>
             </div>
           </div>
