@@ -3,7 +3,18 @@ import { Screen } from '../types';
 import AdminBottomNav from './AdminBottomNav';
 import Header from './Header';
 import { useAuth } from '../context/AuthContext';
-import { getAdminSetting, upsertAdminSetting, createNotification } from '../lib/database';
+import {
+    getAdminSetting,
+    upsertAdminSetting,
+    createNotification,
+    getAllProfiles,
+    upsertProfile,
+    getPets,
+    createPet,
+    deletePet,
+    Profile,
+    Pet
+} from '../lib/database';
 
 // Reusable Toggle Switch Component
 interface ToggleSwitchProps {
@@ -26,7 +37,7 @@ interface AdminSettingsProps {
     onNavigate: (s: Screen) => void;
 }
 
-type ModalType = 'notifications' | 'hours' | 'payments' | 'help' | 'terms' | null;
+type ModalType = 'notifications' | 'hours' | 'payments' | 'help' | 'terms' | 'clients' | null;
 
 interface DailyHours {
     open: string;
@@ -76,6 +87,17 @@ const AdminSettingsScreen: React.FC<AdminSettingsProps> = ({ onNavigate }) => {
     const [broadcastTitle, setBroadcastTitle] = useState('');
     const [broadcastMessage, setBroadcastMessage] = useState('');
     const [sendingBroadcast, setSendingBroadcast] = useState(false);
+
+    // Client management states
+    const [allProfiles, setAllProfiles] = useState<Profile[]>([]);
+    const [clientSearchTerm, setClientSearchTerm] = useState('');
+    const [selectedClient, setSelectedClient] = useState<Profile | null>(null);
+    const [clientPets, setClientPets] = useState<Pet[]>([]);
+    const [editingClient, setEditingClient] = useState<Partial<Profile>>({});
+    const [newPetName, setNewPetName] = useState('');
+    const [newPetBreed, setNewPetBreed] = useState('');
+    const [newPetType, setNewPetType] = useState<'dog' | 'cat' | 'other'>('dog');
+    const [savingClient, setSavingClient] = useState(false);
 
     // Fetch settings on mount
     useEffect(() => {
@@ -196,6 +218,98 @@ const AdminSettingsScreen: React.FC<AdminSettingsProps> = ({ onNavigate }) => {
         }));
     };
 
+    // Client management functions
+    const openClientsModal = async () => {
+        setActiveModal('clients');
+        setSelectedClient(null);
+        setClientSearchTerm('');
+        try {
+            const profiles = await getAllProfiles();
+            setAllProfiles(profiles);
+        } catch (error) {
+            console.error('Error loading profiles:', error);
+        }
+    };
+
+    const selectClient = async (profile: Profile) => {
+        setSelectedClient(profile);
+        setEditingClient({
+            full_name: profile.full_name || '',
+            phone: profile.phone || '',
+            address: profile.address || '',
+            neighborhood: profile.neighborhood || ''
+        });
+        try {
+            const pets = await getPets(profile.id);
+            setClientPets(pets);
+        } catch (error) {
+            console.error('Error loading pets:', error);
+        }
+    };
+
+    const saveClientChanges = async () => {
+        if (!selectedClient) return;
+        setSavingClient(true);
+        try {
+            await upsertProfile({
+                id: selectedClient.id,
+                ...editingClient
+            });
+            // Refresh the profile in state
+            const updatedProfiles = allProfiles.map(p =>
+                p.id === selectedClient.id ? { ...p, ...editingClient } : p
+            );
+            setAllProfiles(updatedProfiles);
+            setSelectedClient({ ...selectedClient, ...editingClient } as Profile);
+            alert('Cliente atualizado com sucesso!');
+        } catch (error) {
+            console.error('Error saving client:', error);
+            alert('Erro ao salvar cliente');
+        } finally {
+            setSavingClient(false);
+        }
+    };
+
+    const handleAddPet = async () => {
+        if (!selectedClient || !newPetName.trim()) {
+            alert('Por favor, insira o nome do pet');
+            return;
+        }
+        try {
+            const newPet = await createPet({
+                user_id: selectedClient.id,
+                name: newPetName.trim(),
+                breed: newPetBreed.trim() || null,
+                age: null,
+                type: newPetType,
+                image_url: null
+            });
+            setClientPets(prev => [...prev, newPet]);
+            setNewPetName('');
+            setNewPetBreed('');
+            setNewPetType('dog');
+        } catch (error) {
+            console.error('Error adding pet:', error);
+            alert('Erro ao adicionar pet');
+        }
+    };
+
+    const handleDeletePet = async (petId: string) => {
+        if (!confirm('Tem certeza que deseja excluir este pet?')) return;
+        try {
+            await deletePet(petId);
+            setClientPets(prev => prev.filter(p => p.id !== petId));
+        } catch (error) {
+            console.error('Error deleting pet:', error);
+            alert('Erro ao excluir pet');
+        }
+    };
+
+    const filteredClients = allProfiles.filter(p =>
+        p.full_name?.toLowerCase().includes(clientSearchTerm.toLowerCase()) ||
+        p.neighborhood?.toLowerCase().includes(clientSearchTerm.toLowerCase())
+    );
+
     const dayLabels: Record<string, string> = {
         seg: 'Segunda', ter: 'Terça', qua: 'Quarta',
         qui: 'Quinta', sex: 'Sexta', sab: 'Sábado', dom: 'Domingo'
@@ -257,6 +371,16 @@ const AdminSettingsScreen: React.FC<AdminSettingsProps> = ({ onNavigate }) => {
                                 <div className="flex items-center gap-3">
                                     <span className="material-symbols-outlined text-gray-400">payments</span>
                                     <span className="font-medium">Formas de Pagamento</span>
+                                </div>
+                                <span className="material-symbols-outlined text-gray-400">chevron_right</span>
+                            </button>
+                            <button
+                                onClick={openClientsModal}
+                                className="w-full flex items-center justify-between p-4 hover:bg-gray-50 rounded-xl transition-colors"
+                            >
+                                <div className="flex items-center gap-3">
+                                    <span className="material-symbols-outlined text-gray-400">group</span>
+                                    <span className="font-medium">Gerenciar Clientes</span>
                                 </div>
                                 <span className="material-symbols-outlined text-gray-400">chevron_right</span>
                             </button>
@@ -576,6 +700,186 @@ const AdminSettingsScreen: React.FC<AdminSettingsProps> = ({ onNavigate }) => {
                                 <button onClick={closeModal} className="w-full mt-6 py-4 bg-primary text-white font-bold rounded-xl">
                                     Li e Concordo
                                 </button>
+                            </>
+                        )}
+
+                        {/* Clients Management Modal */}
+                        {activeModal === 'clients' && (
+                            <>
+                                <div className="flex items-center justify-between mb-6">
+                                    <h2 className="text-xl font-bold">
+                                        {selectedClient ? 'Editar Cliente' : 'Gerenciar Clientes'}
+                                    </h2>
+                                    <button
+                                        onClick={() => {
+                                            if (selectedClient) {
+                                                setSelectedClient(null);
+                                            } else {
+                                                closeModal();
+                                            }
+                                        }}
+                                        className="p-2 hover:bg-gray-100 rounded-full"
+                                    >
+                                        <span className="material-symbols-outlined">
+                                            {selectedClient ? 'arrow_back' : 'close'}
+                                        </span>
+                                    </button>
+                                </div>
+
+                                {!selectedClient ? (
+                                    <>
+                                        <input
+                                            type="text"
+                                            placeholder="Buscar cliente..."
+                                            value={clientSearchTerm}
+                                            onChange={(e) => setClientSearchTerm(e.target.value)}
+                                            className="w-full p-3 mb-4 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary"
+                                        />
+                                        <div className="space-y-2 max-h-[50vh] overflow-y-auto">
+                                            {filteredClients.length === 0 ? (
+                                                <p className="text-center text-gray-500 py-8">Nenhum cliente encontrado</p>
+                                            ) : (
+                                                filteredClients.map(profile => (
+                                                    <button
+                                                        key={profile.id}
+                                                        onClick={() => selectClient(profile)}
+                                                        className="w-full flex items-center gap-3 p-4 bg-gray-50 rounded-xl hover:bg-primary/5 transition-colors text-left"
+                                                    >
+                                                        <div className="size-10 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold">
+                                                            {profile.full_name?.[0]?.toUpperCase() || 'U'}
+                                                        </div>
+                                                        <div>
+                                                            <p className="font-bold">{profile.full_name || 'Sem nome'}</p>
+                                                            <p className="text-xs text-gray-500">{profile.neighborhood || 'Sem bairro'}</p>
+                                                        </div>
+                                                    </button>
+                                                ))
+                                            )}
+                                        </div>
+                                    </>
+                                ) : (
+                                    <>
+                                        <div className="space-y-4 mb-6">
+                                            <div>
+                                                <label className="text-xs font-bold text-gray-500 uppercase ml-1">Nome Completo</label>
+                                                <input
+                                                    type="text"
+                                                    value={editingClient.full_name || ''}
+                                                    onChange={(e) => setEditingClient(prev => ({ ...prev, full_name: e.target.value }))}
+                                                    className="w-full mt-1 p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="text-xs font-bold text-gray-500 uppercase ml-1">Telefone</label>
+                                                <input
+                                                    type="tel"
+                                                    value={editingClient.phone || ''}
+                                                    onChange={(e) => setEditingClient(prev => ({ ...prev, phone: e.target.value }))}
+                                                    className="w-full mt-1 p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="text-xs font-bold text-gray-500 uppercase ml-1">Endereço</label>
+                                                <input
+                                                    type="text"
+                                                    value={editingClient.address || ''}
+                                                    onChange={(e) => setEditingClient(prev => ({ ...prev, address: e.target.value }))}
+                                                    className="w-full mt-1 p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="text-xs font-bold text-gray-500 uppercase ml-1">Bairro</label>
+                                                <input
+                                                    type="text"
+                                                    value={editingClient.neighborhood || ''}
+                                                    onChange={(e) => setEditingClient(prev => ({ ...prev, neighborhood: e.target.value }))}
+                                                    className="w-full mt-1 p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary"
+                                                />
+                                            </div>
+                                            <button
+                                                onClick={saveClientChanges}
+                                                disabled={savingClient}
+                                                className="w-full py-3 bg-primary text-white font-bold rounded-xl disabled:opacity-50"
+                                            >
+                                                {savingClient ? 'Salvando...' : 'Salvar Alterações'}
+                                            </button>
+                                        </div>
+                                        <div className="border-t border-gray-200 pt-4">
+                                            <h3 className="font-bold text-gray-700 mb-3 flex items-center gap-2">
+                                                <span className="material-symbols-outlined text-[20px]">pets</span>
+                                                Pets do Cliente
+                                            </h3>
+                                            <div className="space-y-2 mb-4">
+                                                {clientPets.length === 0 ? (
+                                                    <p className="text-sm text-gray-500 text-center py-4">Nenhum pet cadastrado</p>
+                                                ) : (
+                                                    clientPets.map(pet => (
+                                                        <div key={pet.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
+                                                            <div className="flex items-center gap-3">
+                                                                <div className="size-8 rounded-full bg-orange-100 flex items-center justify-center">
+                                                                    <span className="material-symbols-outlined text-orange-500 text-[16px]">
+                                                                        {pet.type === 'cat' ? 'pets' : 'cruelty_free'}
+                                                                    </span>
+                                                                </div>
+                                                                <div>
+                                                                    <p className="font-bold text-sm">{pet.name}</p>
+                                                                    <p className="text-xs text-gray-500">{pet.breed || 'Sem raça'}</p>
+                                                                </div>
+                                                            </div>
+                                                            <button
+                                                                onClick={() => handleDeletePet(pet.id)}
+                                                                className="p-2 text-red-500 hover:bg-red-50 rounded-lg"
+                                                            >
+                                                                <span className="material-symbols-outlined text-[18px]">delete</span>
+                                                            </button>
+                                                        </div>
+                                                    ))
+                                                )}
+                                            </div>
+                                            <div className="p-4 bg-green-50 rounded-xl border border-green-100">
+                                                <p className="text-xs font-bold text-green-700 mb-3">Adicionar Novo Pet</p>
+                                                <div className="space-y-2">
+                                                    <input
+                                                        type="text"
+                                                        placeholder="Nome do Pet"
+                                                        value={newPetName}
+                                                        onChange={(e) => setNewPetName(e.target.value)}
+                                                        className="w-full p-2 bg-white border border-gray-200 rounded-lg text-sm"
+                                                    />
+                                                    <input
+                                                        type="text"
+                                                        placeholder="Raça (opcional)"
+                                                        value={newPetBreed}
+                                                        onChange={(e) => setNewPetBreed(e.target.value)}
+                                                        className="w-full p-2 bg-white border border-gray-200 rounded-lg text-sm"
+                                                    />
+                                                    <div className="flex gap-2">
+                                                        {(['dog', 'cat', 'other'] as const).map(type => (
+                                                            <button
+                                                                key={type}
+                                                                type="button"
+                                                                onClick={() => setNewPetType(type)}
+                                                                className={`flex-1 py-2 rounded-lg text-xs font-bold transition-colors ${newPetType === type
+                                                                        ? 'bg-green-500 text-white'
+                                                                        : 'bg-white border border-gray-200 text-gray-600'
+                                                                    }`}
+                                                            >
+                                                                {type === 'dog' ? 'Cachorro' : type === 'cat' ? 'Gato' : 'Outro'}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                    <button
+                                                        onClick={handleAddPet}
+                                                        disabled={!newPetName.trim()}
+                                                        className="w-full py-2 bg-green-500 text-white font-bold rounded-lg text-sm disabled:opacity-50"
+                                                    >
+                                                        + Adicionar Pet
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
                             </>
                         )}
                     </div>
