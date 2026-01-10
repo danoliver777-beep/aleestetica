@@ -137,10 +137,28 @@ const LoginScreen: React.FC = () => {
         {!isSignUp && (
           <div className="flex justify-center pt-6">
             <button
-              className="text-sm font-semibold text-secondary hover:text-orange-600 transition-colors"
+              className="text-sm font-semibold text-secondary hover:text-orange-600 transition-colors disabled:opacity-50"
               type="button"
-              onClick={() => {
-                // Handle Forgot Password
+              disabled={loading}
+              onClick={async () => {
+                if (!email) {
+                  setError('Por favor, insira seu e-mail para recuperar a senha.');
+                  return;
+                }
+                setLoading(true);
+                setError(null);
+                setMessage(null);
+                try {
+                  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+                    redirectTo: window.location.origin,
+                  });
+                  if (error) throw error;
+                  setMessage('Link de recuperação enviado para o seu e-mail!');
+                } catch (err: any) {
+                  setError(err.message || 'Erro ao enviar e-mail de recuperação');
+                } finally {
+                  setLoading(false);
+                }
               }}
             >
               Esqueci minha senha

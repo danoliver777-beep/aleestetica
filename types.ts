@@ -53,4 +53,5 @@ export type Screen =
   | 'ADMIN_AGENDA'
   | 'ADMIN_SERVICES'
   | 'ADMIN_SETTINGS'
-  | 'PET_REGISTRATION';
+  | 'PET_REGISTRATION'
+  | 'RESET_PASSWORD';

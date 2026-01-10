@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Screen, Service, UserRole } from './types';
 import { MOCK_SERVICES } from './mockData';
+import { supabase } from './supabaseClient';
 
 // Screens
 import LoginScreen from './components/LoginScreen';
@@ -14,6 +15,7 @@ import AdminAgendaScreen from './components/AdminAgendaScreen';
 import AdminServicesScreen from './components/AdminServicesScreen';
 import AdminSettingsScreen from './components/AdminSettingsScreen';
 import PetRegistrationScreen from './components/PetRegistrationScreen';
+import ResetPasswordScreen from './components/ResetPasswordScreen';
 
 import { AuthProvider, useAuth } from './context/AuthContext';
 
@@ -48,6 +50,17 @@ const AppContent: React.FC = () => {
       }
     }
   }, [user, role, loading]);
+
+  useEffect(() => {
+    // Listen for PASSWORD_RECOVERY event
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, _session) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        setCurrentScreen('RESET_PASSWORD');
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   // Simple Router
   const renderScreen = () => {
@@ -92,6 +105,14 @@ const AppContent: React.FC = () => {
         return <AdminSettingsScreen onNavigate={setCurrentScreen} />;
       case 'PET_REGISTRATION':
         return <PetRegistrationScreen pet={petToEdit} onBack={() => handleNavigate('PROFILE')} />;
+      case 'RESET_PASSWORD':
+        return <ResetPasswordScreen
+          onBack={() => setCurrentScreen('LOGIN')}
+          onSuccess={() => {
+            alert('Senha redefinida com sucesso!');
+            setCurrentScreen('LOGIN');
+          }}
+        />;
       case 'LOGIN':
         // Fallback if user is logged in but screen is stuck on LOGIN (should be handled by effect)
         return null;
