@@ -93,6 +93,8 @@ const AdminBookingModal: React.FC<AdminBookingModalProps> = ({
     };
 
     const loadPets = async (userId: string) => {
+        setPets([]);
+        setSelectedPetId('');
         try {
             const data = await getPets(userId);
             setPets(data);
@@ -269,7 +271,12 @@ const AdminBookingModal: React.FC<AdminBookingModalProps> = ({
                                     type="text"
                                     placeholder="Buscar cliente..."
                                     value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    onChange={(e) => {
+                                        setSearchTerm(e.target.value);
+                                        setSelectedProfileId('');
+                                        setPets([]);
+                                        setSelectedPetId('');
+                                    }}
                                     className="w-full mb-2 p-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-primary"
                                 />
                                 <select
