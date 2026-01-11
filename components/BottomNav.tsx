@@ -27,15 +27,6 @@ const BottomNav: React.FC<BottomNavProps> = ({ active, onNavigate }) => {
           <span className="text-[10px] font-medium">Agenda</span>
         </button>
 
-        <button
-          onClick={() => onNavigate('BOOKING')}
-          className="flex flex-col items-center justify-center -mt-10"
-        >
-          <div className="bg-primary text-white rounded-full p-3 shadow-lg shadow-blue-500/40 border-4 border-background-light dark:border-background-dark active:scale-95 transition-transform">
-            <span className="material-symbols-outlined text-[28px]">add</span>
-          </div>
-          <span className="text-[10px] font-medium text-gray-400 mt-1">Novo</span>
-        </button>
 
         <button
           onClick={() => onNavigate('PET_REGISTRATION')}
