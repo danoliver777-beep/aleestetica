@@ -243,8 +243,7 @@ const AdminSettingsScreen: React.FC<AdminSettingsProps> = ({ onNavigate }) => {
             full_name: profile.full_name || '',
             phone: profile.phone || '',
             address: profile.address || '',
-            neighborhood: profile.neighborhood || '',
-            role: profile.role || 'CLIENT'
+            neighborhood: profile.neighborhood || ''
         });
         try {
             const pets = await getPets(profile.id);
@@ -815,37 +814,15 @@ const AdminSettingsScreen: React.FC<AdminSettingsProps> = ({ onNavigate }) => {
                                                         className="w-full flex items-center gap-3 p-4 bg-gray-50 rounded-xl hover:bg-primary/5 transition-colors text-left"
                                                     >
                                                         <div className="size-10 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold">
-                                                            {profile.role === 'STAFF' ? (
-                                                                <span className="material-symbols-outlined text-sm">badge</span>
-                                                            ) : profile.role === 'ADMIN' ? (
-                                                                <span className="material-symbols-outlined text-sm">shield_person</span>
-                                                            ) : (
-                                                                profile.full_name?.[0]?.toUpperCase() || 'U'
-                                                            )}
+                                                            {profile.full_name?.[0]?.toUpperCase() || 'U'}
                                                         </div>
                                                         <div className="flex-1">
-                                                            <div className="flex items-center gap-2">
-                                                                <p className="font-bold">{profile.full_name || 'Sem nome'}</p>
-                                                                {profile.role === 'STAFF' && <span className="bg-blue-100 text-blue-700 text-[8px] font-bold px-1 rounded uppercase tracking-wider">Staff</span>}
-                                                                {profile.role === 'ADMIN' && <span className="bg-red-100 text-red-700 text-[8px] font-bold px-1 rounded uppercase tracking-wider">Admin</span>}
-                                                            </div>
+                                                            <p className="font-bold">{profile.full_name || 'Sem nome'}</p>
                                                             <p className="text-xs text-gray-500">{profile.neighborhood || 'Sem bairro'}</p>
                                                         </div>
                                                     </button>
                                                 ))
                                             )}
-                                        </div>
-                                        <div className="mt-4 p-4 bg-blue-50 rounded-xl border border-blue-100">
-                                            <div className="flex items-start gap-3">
-                                                <span className="material-symbols-outlined text-blue-500 text-lg">info</span>
-                                                <div>
-                                                    <p className="text-xs font-bold text-blue-700">Novo Cliente ou Funcionário?</p>
-                                                    <p className="text-[10px] text-blue-600 mt-0.5 leading-relaxed">
-                                                        Para adicionar um novo usuário, peça para ele baixar o app e usar a opção <strong>"Cadastrar"</strong> na tela inicial.
-                                                        Assim que ele criar a conta, ele aparecerá nesta lista e você poderá promover para <strong>Staff</strong> se desejar.
-                                                    </p>
-                                                </div>
-                                            </div>
                                         </div>
                                     </>
                                 ) : (
@@ -912,27 +889,6 @@ const AdminSettingsScreen: React.FC<AdminSettingsProps> = ({ onNavigate }) => {
                                                     className="w-full mt-1 p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary"
                                                 />
                                             </div>
-
-                                            {/* Role selection - Only for Admin */}
-                                            {role === UserRole.ADMIN && selectedClient.role !== 'ADMIN' && (
-                                                <div className="p-4 bg-gray-100 rounded-xl">
-                                                    <label className="text-xs font-bold text-gray-500 uppercase block mb-2">Tipo de Usuário (Cargo)</label>
-                                                    <div className="flex gap-2">
-                                                        {(['CLIENT', 'STAFF'] as const).map(roleOption => (
-                                                            <button
-                                                                key={roleOption}
-                                                                onClick={() => setEditingClient(prev => ({ ...prev, role: roleOption }))}
-                                                                className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${editingClient.role === roleOption
-                                                                    ? 'bg-primary text-white shadow-md'
-                                                                    : 'bg-white border border-gray-200 text-gray-600'}`}
-                                                            >
-                                                                {roleOption === 'CLIENT' ? 'Cliente Comum' : 'Staff (Funcionário)'}
-                                                            </button>
-                                                        ))}
-                                                    </div>
-                                                    <p className="text-[9px] text-gray-400 mt-2 italic">* O Staff pode ver agenda e gerenciar serviços, mas não vê a receita financeira.</p>
-                                                </div>
-                                            )}
                                             <button
                                                 onClick={saveClientChanges}
                                                 disabled={savingClient}

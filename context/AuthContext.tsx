@@ -24,46 +24,70 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     useEffect(() => {
         const fetchRole = async (user: User) => {
-            // Priority check for admin email to avoid race conditions
+            // Priority check for hardcoded emails to avoid race conditions and provide immediate access
             if (user.email === 'admin@admin.com') {
                 setRole(UserRole.ADMIN);
+                return UserRole.ADMIN;
+            }
+            if (user.email === 'funcionario@aleestetica.com') {
+                setRole(UserRole.STAFF);
+                return UserRole.STAFF;
             }
 
             try {
-                const profile = await getProfile(user.id);
-                if (profile?.role) {
-                    setRole(profile.role as UserRole);
-                } else if (user.email !== 'admin@admin.com') {
-                    setRole(UserRole.CLIENT);
-                }
+                // Set a timeout for the profile fetch to prevent app hang
+                const profilePromise = getProfile(user.id);
+                const timeoutPromise = new Promise((_, reject) =>
+                    setTimeout(() => reject(new Error('Timeout')), 3000)
+                );
+
+                const profile = await Promise.race([profilePromise, timeoutPromise]) as any;
+
+                const userRole = (profile?.role as UserRole) ?? UserRole.CLIENT;
+                setRole(userRole);
+                return userRole;
             } catch (err) {
                 console.error('Error fetching role:', err);
-                if (user.email !== 'admin@admin.com') {
-                    setRole(UserRole.CLIENT);
-                }
+                const fallbackRole = user.email === 'admin@admin.com' ? UserRole.ADMIN :
+                    user.email === 'funcionario@aleestetica.com' ? UserRole.STAFF :
+                        UserRole.CLIENT;
+                setRole(fallbackRole);
+                return fallbackRole;
             }
         };
 
-        // Check active session
-        supabase.auth.getSession().then(({ data: { session } }) => {
-            setSession(session);
-            setUser(session?.user ?? null);
-            if (session?.user) {
-                fetchRole(session.user);
-            }
-            setLoading(false);
-        });
+        const initializeAuth = async () => {
+            try {
+                const { data: { session } } = await supabase.auth.getSession();
+                setSession(session);
+                setUser(session?.user ?? null);
 
-        // Listen for changes
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+                if (session?.user) {
+                    await fetchRole(session.user);
+                }
+            } catch (error) {
+                console.error('Auth initialization error:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        initializeAuth();
+
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
             setSession(session);
-            setUser(session?.user ?? null);
-            if (session?.user) {
-                fetchRole(session.user);
+            const newUser = session?.user ?? null;
+            setUser(newUser);
+
+            if (newUser) {
+                // Only show loading if it's a new sign in or change
+                if (event === 'SIGNED_IN') setLoading(true);
+                await fetchRole(newUser);
+                if (event === 'SIGNED_IN') setLoading(false);
             } else {
                 setRole(null);
+                setLoading(false);
             }
-            setLoading(false);
         });
 
         return () => subscription.unsubscribe();
@@ -75,7 +99,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         } catch (error) {
             console.error('Error signing out:', error);
         } finally {
-            // Force clear states to ensure UI updates even if listener is slow
             setSession(null);
             setUser(null);
             setRole(null);
@@ -83,7 +106,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
 
     const signIn = () => {
-        // Usually handled in LoginScreen, but provided for completeness if needed
+        // Usually handled in LoginScreen
     };
 
     const value = {
