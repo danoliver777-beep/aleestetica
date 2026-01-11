@@ -3,6 +3,7 @@ import { Screen } from '../types';
 import AdminBottomNav from './AdminBottomNav';
 import Header from './Header';
 import { useAuth } from '../context/AuthContext';
+import { supabase } from '../supabaseClient';
 import {
     getAdminSetting,
     upsertAdminSetting,
@@ -12,6 +13,9 @@ import {
     getPets,
     createPet,
     deletePet,
+    updatePet,
+    uploadAvatar,
+    uploadPetImage,
     Profile,
     Pet
 } from '../lib/database';
@@ -98,6 +102,8 @@ const AdminSettingsScreen: React.FC<AdminSettingsProps> = ({ onNavigate }) => {
     const [newPetBreed, setNewPetBreed] = useState('');
     const [newPetType, setNewPetType] = useState<'dog' | 'cat' | 'other'>('dog');
     const [savingClient, setSavingClient] = useState(false);
+    const [uploadingImage, setUploadingImage] = useState<string | null>(null); // 'tutor' or pet.id
+    const [newPetImageUrl, setNewPetImageUrl] = useState<string | null>(null);
 
     // Fetch settings on mount
     useEffect(() => {
@@ -247,6 +253,67 @@ const AdminSettingsScreen: React.FC<AdminSettingsProps> = ({ onNavigate }) => {
         }
     };
 
+    const handleTutorImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file || !selectedClient) return;
+
+        setUploadingImage('tutor');
+        try {
+            const url = await uploadAvatar(selectedClient.id, file);
+            if (url) {
+                setEditingClient(prev => ({ ...prev, avatar_url: url }));
+            }
+        } catch (error) {
+            console.error('Error uploading tutor image:', error);
+            alert('Erro ao enviar foto do tutor');
+        } finally {
+            setUploadingImage(null);
+        }
+    };
+
+    const handlePetImageUpload = async (petId: string, e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file || !selectedClient) return;
+
+        setUploadingImage(petId);
+        try {
+            const url = await uploadPetImage(selectedClient.id, petId, file);
+            if (url) {
+                await updatePet(petId, { image_url: url });
+                setClientPets(prev => prev.map(p => p.id === petId ? { ...p, image_url: url } : p));
+            }
+        } catch (error) {
+            console.error('Error uploading pet image:', error);
+            alert('Erro ao enviar foto do pet');
+        } finally {
+            setUploadingImage(null);
+        }
+    };
+
+    const handleNewPetImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file || !selectedClient) return;
+
+        setUploadingImage('new-pet');
+        try {
+            // Since we don't have a pet ID yet, we'll use a temporary upload or store the file
+            // For simplicity and consistency with current DB structure, let's use a random ID or handle it during creation
+            // Alternatively, we can use a generic path and rename later, but let's just use a timestamp for the filename
+            const fileName = `${selectedClient.id}/temp_${Date.now()}`;
+            const { data: uploadData, error: uploadError } = await (supabase.storage.from('pets') as any).upload(fileName, file);
+
+            if (uploadError) throw uploadError;
+
+            const { data } = supabase.storage.from('pets').getPublicUrl(fileName);
+            setNewPetImageUrl(data.publicUrl);
+        } catch (error) {
+            console.error('Error uploading new pet image:', error);
+            alert('Erro ao enviar foto do pet');
+        } finally {
+            setUploadingImage(null);
+        }
+    };
+
     const saveClientChanges = async () => {
         if (!selectedClient) return;
         setSavingClient(true);
@@ -282,12 +349,13 @@ const AdminSettingsScreen: React.FC<AdminSettingsProps> = ({ onNavigate }) => {
                 breed: newPetBreed.trim() || null,
                 age: null,
                 type: newPetType,
-                image_url: null
+                image_url: newPetImageUrl
             });
             setClientPets(prev => [...prev, newPet]);
             setNewPetName('');
             setNewPetBreed('');
             setNewPetType('dog');
+            setNewPetImageUrl(null);
         } catch (error) {
             console.error('Error adding pet:', error);
             alert('Erro ao adicionar pet');
@@ -760,6 +828,31 @@ const AdminSettingsScreen: React.FC<AdminSettingsProps> = ({ onNavigate }) => {
                                 ) : (
                                     <>
                                         <div className="space-y-4 mb-6">
+                                            <div className="flex flex-col items-center gap-3 py-2">
+                                                <div className="relative group">
+                                                    <div
+                                                        className="size-24 rounded-full border-4 border-white shadow-md bg-cover bg-center bg-gray-200 overflow-hidden"
+                                                        style={{ backgroundImage: (editingClient.avatar_url || selectedClient.avatar_url) ? `url("${editingClient.avatar_url || selectedClient.avatar_url}")` : 'none' }}
+                                                    >
+                                                        {!(editingClient.avatar_url || selectedClient.avatar_url) && (
+                                                            <div className="h-full w-full flex items-center justify-center">
+                                                                <span className="material-symbols-outlined text-gray-400 text-4xl">person</span>
+                                                            </div>
+                                                        )}
+                                                        {uploadingImage === 'tutor' && (
+                                                            <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                                                                <div className="size-6 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    <label className="absolute bottom-0 right-0 size-8 bg-primary text-white rounded-full flex items-center justify-center cursor-pointer shadow-lg hover:bg-blue-600 transition-colors">
+                                                        <span className="material-symbols-outlined text-base">photo_camera</span>
+                                                        <input type="file" className="hidden" accept="image/*" onChange={handleTutorImageUpload} />
+                                                    </label>
+                                                </div>
+                                                <p className="text-[10px] font-bold text-gray-400 uppercase">Foto do Tutor</p>
+                                            </div>
+
                                             <div>
                                                 <label className="text-xs font-bold text-gray-500 uppercase ml-1">Nome Completo</label>
                                                 <input
@@ -816,10 +909,28 @@ const AdminSettingsScreen: React.FC<AdminSettingsProps> = ({ onNavigate }) => {
                                                     clientPets.map(pet => (
                                                         <div key={pet.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
                                                             <div className="flex items-center gap-3">
-                                                                <div className="size-8 rounded-full bg-orange-100 flex items-center justify-center">
-                                                                    <span className="material-symbols-outlined text-orange-500 text-[16px]">
-                                                                        {pet.type === 'cat' ? 'pets' : 'cruelty_free'}
-                                                                    </span>
+                                                                <div className="relative">
+                                                                    <div
+                                                                        className="size-10 rounded-full bg-cover bg-center bg-gray-100 border border-gray-200 overflow-hidden"
+                                                                        style={{ backgroundImage: pet.image_url ? `url("${pet.image_url}")` : 'none' }}
+                                                                    >
+                                                                        {!pet.image_url && (
+                                                                            <div className="h-full w-full flex items-center justify-center">
+                                                                                <span className="material-symbols-outlined text-gray-300 text-xl">
+                                                                                    {pet.type === 'cat' ? 'pets' : 'cruelty_free'}
+                                                                                </span>
+                                                                            </div>
+                                                                        )}
+                                                                        {uploadingImage === pet.id && (
+                                                                            <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                                                                                <div className="size-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                    <label className="absolute -bottom-1 -right-1 size-5 bg-primary text-white rounded-full flex items-center justify-center cursor-pointer shadow-md">
+                                                                        <span className="material-symbols-outlined text-[12px]">edit</span>
+                                                                        <input type="file" className="hidden" accept="image/*" onChange={(e) => handlePetImageUpload(pet.id, e)} />
+                                                                    </label>
                                                                 </div>
                                                                 <div>
                                                                     <p className="font-bold text-sm">{pet.name}</p>
@@ -838,44 +949,59 @@ const AdminSettingsScreen: React.FC<AdminSettingsProps> = ({ onNavigate }) => {
                                             </div>
                                             <div className="p-4 bg-green-50 rounded-xl border border-green-100">
                                                 <p className="text-xs font-bold text-green-700 mb-3">Adicionar Novo Pet</p>
-                                                <div className="space-y-2">
-                                                    <input
-                                                        type="text"
-                                                        placeholder="Nome do Pet"
-                                                        value={newPetName}
-                                                        onChange={(e) => setNewPetName(e.target.value)}
-                                                        className="w-full p-2 bg-white border border-gray-200 rounded-lg text-sm"
-                                                    />
-                                                    <input
-                                                        type="text"
-                                                        placeholder="Raça (opcional)"
-                                                        value={newPetBreed}
-                                                        onChange={(e) => setNewPetBreed(e.target.value)}
-                                                        className="w-full p-2 bg-white border border-gray-200 rounded-lg text-sm"
-                                                    />
-                                                    <div className="flex gap-2">
-                                                        {(['dog', 'cat', 'other'] as const).map(type => (
-                                                            <button
-                                                                key={type}
-                                                                type="button"
-                                                                onClick={() => setNewPetType(type)}
-                                                                className={`flex-1 py-2 rounded-lg text-xs font-bold transition-colors ${newPetType === type
-                                                                    ? 'bg-green-500 text-white'
-                                                                    : 'bg-white border border-gray-200 text-gray-600'
-                                                                    }`}
-                                                            >
-                                                                {type === 'dog' ? 'Cachorro' : type === 'cat' ? 'Gato' : 'Outro'}
-                                                            </button>
-                                                        ))}
+                                                <div className="flex items-center gap-4">
+                                                    <div className="size-16 rounded-xl bg-gray-50 border-2 border-dashed border-gray-200 flex items-center justify-center relative overflow-hidden shrink-0">
+                                                        {newPetImageUrl ? (
+                                                            <img src={newPetImageUrl} alt="Preview" className="w-full h-full object-cover" />
+                                                        ) : (
+                                                            <span className="material-symbols-outlined text-gray-300">add_a_photo</span>
+                                                        )}
+                                                        {uploadingImage === 'new-pet' && (
+                                                            <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                                                                <div className="size-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                                            </div>
+                                                        )}
+                                                        <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" accept="image/*" onChange={handleNewPetImageUpload} />
                                                     </div>
-                                                    <button
-                                                        onClick={handleAddPet}
-                                                        disabled={!newPetName.trim()}
-                                                        className="w-full py-2 bg-green-500 text-white font-bold rounded-lg text-sm disabled:opacity-50"
-                                                    >
-                                                        + Adicionar Pet
-                                                    </button>
+                                                    <div className="flex-1 space-y-2">
+                                                        <input
+                                                            type="text"
+                                                            placeholder="Nome do Pet"
+                                                            value={newPetName}
+                                                            onChange={(e) => setNewPetName(e.target.value)}
+                                                            className="w-full p-2 bg-white border border-gray-200 rounded-lg text-sm"
+                                                        />
+                                                        <input
+                                                            type="text"
+                                                            placeholder="Raça (opcional)"
+                                                            value={newPetBreed}
+                                                            onChange={(e) => setNewPetBreed(e.target.value)}
+                                                            className="w-full p-2 bg-white border border-gray-200 rounded-lg text-sm"
+                                                        />
+                                                    </div>
                                                 </div>
+                                                <div className="flex gap-2">
+                                                    {(['dog', 'cat', 'other'] as const).map(type => (
+                                                        <button
+                                                            key={type}
+                                                            type="button"
+                                                            onClick={() => setNewPetType(type)}
+                                                            className={`flex-1 py-2 rounded-lg text-xs font-bold transition-colors ${newPetType === type
+                                                                ? 'bg-green-500 text-white'
+                                                                : 'bg-white border border-gray-200 text-gray-600'
+                                                                }`}
+                                                        >
+                                                            {type === 'dog' ? 'Cachorro' : type === 'cat' ? 'Gato' : 'Outro'}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                                <button
+                                                    onClick={handleAddPet}
+                                                    disabled={!newPetName.trim()}
+                                                    className="w-full py-2 bg-green-500 text-white font-bold rounded-lg text-sm disabled:opacity-50"
+                                                >
+                                                    + Adicionar Pet
+                                                </button>
                                             </div>
                                         </div>
                                     </>
