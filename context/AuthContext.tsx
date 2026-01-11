@@ -3,6 +3,7 @@ import React, { createContext, useContext, useEffect, useState, ReactNode } from
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '../supabaseClient';
 import { UserRole } from '../types';
+import { getProfile } from '../lib/database';
 
 interface AuthContextType {
     user: User | null;
@@ -22,14 +23,22 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const [role, setRole] = useState<UserRole | null>(null);
 
     useEffect(() => {
+        const fetchRole = async (userId: string) => {
+            try {
+                const profile = await getProfile(userId);
+                setRole(profile?.role as UserRole ?? UserRole.CLIENT);
+            } catch (err) {
+                console.error('Error fetching role:', err);
+                setRole(UserRole.CLIENT);
+            }
+        };
+
         // Check active session
         supabase.auth.getSession().then(({ data: { session } }) => {
             setSession(session);
             setUser(session?.user ?? null);
             if (session?.user) {
-                // Simplified role check for MVP:
-                // admin@admin.com is ADMIN, others are CLIENT
-                setRole(session.user.email === 'admin@admin.com' ? UserRole.ADMIN : UserRole.CLIENT);
+                fetchRole(session.user.id);
             }
             setLoading(false);
         });
@@ -39,7 +48,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             setSession(session);
             setUser(session?.user ?? null);
             if (session?.user) {
-                setRole(session.user.email === 'admin@admin.com' ? UserRole.ADMIN : UserRole.CLIENT);
+                fetchRole(session.user.id);
             } else {
                 setRole(null);
             }

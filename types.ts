@@ -1,7 +1,8 @@
 
 export enum UserRole {
   CLIENT = 'CLIENT',
-  ADMIN = 'ADMIN'
+  ADMIN = 'ADMIN',
+  STAFF = 'STAFF'
 }
 
 export enum AppStatus {

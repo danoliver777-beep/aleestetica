@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Screen } from '../types';
+import { Screen, UserRole } from '../types';
 import Header from './Header';
 import AdminBottomNav from './AdminBottomNav';
 import { useAuth } from '../context/AuthContext';
@@ -11,7 +11,7 @@ interface AdminDashboardProps {
 }
 
 const AdminDashboardScreen: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
-  const { user, signOut } = useAuth();
+  const { user, signOut, role } = useAuth();
   const [stats, setStats] = useState({ todayCount: 0, pendingCount: 0, todayRevenue: 0 });
   const [allUpcomingAppointments, setAllUpcomingAppointments] = useState<AppointmentWithDetails[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -140,18 +140,20 @@ const AdminDashboardScreen: React.FC<AdminDashboardProps> = ({ onNavigate }) => 
               <p className="text-[10px] font-medium text-gray-500">Pendentes</p>
             </div>
           </div>
-          <div
-            onClick={loadFinancialData}
-            className="min-w-[140px] flex-1 rounded-xl bg-white dark:bg-surface-dark p-4 shadow-sm border border-gray-100 flex flex-col justify-between h-[120px] cursor-pointer hover:border-green-300 hover:shadow-md transition-all active:scale-95"
-          >
-            <div className="rounded-full bg-green-500/10 p-2 text-green-600 w-fit">
-              <span className="material-symbols-outlined text-[20px]">attach_money</span>
+          {role === UserRole.ADMIN && (
+            <div
+              onClick={loadFinancialData}
+              className="min-w-[140px] flex-1 rounded-xl bg-white dark:bg-surface-dark p-4 shadow-sm border border-gray-100 flex flex-col justify-between h-[120px] cursor-pointer hover:border-green-300 hover:shadow-md transition-all active:scale-95"
+            >
+              <div className="rounded-full bg-green-500/10 p-2 text-green-600 w-fit">
+                <span className="material-symbols-outlined text-[20px]">attach_money</span>
+              </div>
+              <div>
+                <p className="text-3xl font-extrabold"><span className="text-lg align-top pt-1 inline-block">R$</span>{loading ? '...' : stats.todayRevenue.toFixed(0)}</p>
+                <p className="text-[10px] font-medium text-gray-500">Receita</p>
+              </div>
             </div>
-            <div>
-              <p className="text-3xl font-extrabold"><span className="text-lg align-top pt-1 inline-block">R$</span>{loading ? '...' : stats.todayRevenue.toFixed(0)}</p>
-              <p className="text-[10px] font-medium text-gray-500">Receita</p>
-            </div>
-          </div>
+          )}
         </div>
 
         {/* Quick Actions */}
