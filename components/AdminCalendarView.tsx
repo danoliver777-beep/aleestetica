@@ -33,7 +33,7 @@ const AdminCalendarView: React.FC<AdminCalendarViewProps> = ({
     const months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
 
     const filteredAppointments = useMemo(() => {
-        return appointments.filter(app => app.status !== 'CANCELLED' && app.status !== 'CANCELED');
+        return appointments; // Show all to maintain history
     }, [appointments]);
 
     const navigate = (direction: 'PREV' | 'NEXT') => {
@@ -135,7 +135,7 @@ const AdminCalendarView: React.FC<AdminCalendarViewProps> = ({
 
         if (!draggedAppointment || isUpdating) return;
 
-        const confirmDelete = window.confirm(`Deseja realmente excluir o agendamento de ${draggedAppointment.pet?.name || 'este pet'}?`);
+        const confirmDelete = window.confirm(`⚠️ ATENÇÃO: Você está prestes a EXCLUIR permanentemente o agendamento de ${draggedAppointment.pet?.name || 'este pet'}.\n\nPara manter o histórico, recomendamos usar o status "Cancelado" em vez de excluir.\n\nDeseja realmente APAGAR este registro?`);
         if (!confirmDelete) {
             setDraggedAppointment(null);
             return;
@@ -186,7 +186,7 @@ const AdminCalendarView: React.FC<AdminCalendarViewProps> = ({
     const handleBulkDelete = async () => {
         if (selectedAppIds.length === 0 || isUpdating) return;
 
-        const confirmDelete = window.confirm(`Deseja realmente excluir os ${selectedAppIds.length} agendamentos selecionados?`);
+        const confirmDelete = window.confirm(`⚠️ ATENÇÃO: Você está prestes a EXCLUIR permanentemente ${selectedAppIds.length} agendamentos.\n\nIsso removerá os registros do histórico da empresa.\n\nDeseja realmente agapar estes registros?`);
         if (!confirmDelete) return;
 
         setIsUpdating(true);
@@ -307,7 +307,10 @@ const AdminCalendarView: React.FC<AdminCalendarViewProps> = ({
                                         className={`
                                                     p-2 rounded-lg bg-white dark:bg-gray-700 shadow-sm border-l-3 cursor-grab active:cursor-grabbing relative
                                                     transition-all duration-150 hover:shadow hover:scale-[1.01]
-                                                    ${app.status === 'CONFIRMED' ? 'border-green-500' : app.status === 'PENDING' ? 'border-orange-500' : 'border-blue-500'}
+                                                    ${app.status === 'CONFIRMED' ? 'border-green-500' :
+                                                app.status === 'PENDING' ? 'border-orange-500' :
+                                                    app.status === 'COMPLETED' ? 'border-blue-500' :
+                                                        'border-gray-400 opacity-60'}
                                                     ${draggedAppointment?.id === app.id ? 'opacity-40 scale-95' : ''}
                                                     ${isUpdating ? 'pointer-events-none opacity-60' : ''}
                                                     ${isSelected ? 'ring-2 ring-primary ring-inset bg-primary/5 dark:bg-primary/10' : ''}
@@ -603,7 +606,9 @@ const WeekViewCompact: React.FC<WeekViewCompactProps> = ({
                                                 ? 'bg-green-100 dark:bg-green-900/40 border-green-500 text-green-800 dark:text-green-200'
                                                 : app.status === 'PENDING'
                                                     ? 'bg-orange-100 dark:bg-orange-900/40 border-orange-500 text-orange-800 dark:text-orange-200'
-                                                    : 'bg-blue-100 dark:bg-blue-900/40 border-blue-500 text-blue-800 dark:text-blue-200'
+                                                    : app.status === 'COMPLETED'
+                                                        ? 'bg-blue-100 dark:bg-blue-900/40 border-blue-500 text-blue-800 dark:text-blue-200'
+                                                        : 'bg-red-50 dark:bg-red-900/20 border-gray-400 text-gray-500 dark:text-gray-400 line-through opacity-70'
                                                 } ${draggedAppointment?.id === app.id ? 'opacity-30 scale-95' : 'hover:scale-[1.02] hover:shadow-md'} ${isUpdating ? 'pointer-events-none opacity-60' : ''}`}
                                             style={{
                                                 top: `${topMobile}px`,
@@ -615,9 +620,12 @@ const WeekViewCompact: React.FC<WeekViewCompactProps> = ({
                                                 onEditAppointment(app);
                                             }}
                                         >
-                                            <div className="font-bold truncate leading-tight">{app.pet?.name}</div>
+                                            <div className="font-bold truncate leading-tight flex items-center gap-0.5">
+                                                {app.status === 'COMPLETED' && <span className="material-symbols-outlined text-[10px]">check_circle</span>}
+                                                {app.pet?.name}
+                                            </div>
                                             <div className="opacity-70 truncate leading-tight hidden sm:block">
-                                                {app.scheduled_time.substring(0, 5)}
+                                                {app.scheduled_time.substring(0, 5)} {app.status === 'CANCELED' || app.status === 'CANCELLED' ? '(Canc.)' : ''}
                                             </div>
                                         </div>
                                     );
