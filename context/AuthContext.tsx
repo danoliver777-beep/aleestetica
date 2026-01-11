@@ -70,7 +70,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }, []);
 
     const signOut = async () => {
-        await supabase.auth.signOut();
+        try {
+            await supabase.auth.signOut();
+        } catch (error) {
+            console.error('Error signing out:', error);
+        } finally {
+            // Force clear states to ensure UI updates even if listener is slow
+            setSession(null);
+            setUser(null);
+            setRole(null);
+        }
     };
 
     const signIn = () => {
