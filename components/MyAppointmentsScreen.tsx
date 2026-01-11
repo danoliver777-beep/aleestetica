@@ -185,15 +185,6 @@ const MyAppointmentsScreen: React.FC<MyAppointmentsProps> = ({ onNavigate }) => 
         )}
       </main>
 
-      <div className="fixed bottom-24 left-1/2 -translate-x-1/2 w-full max-w-[400px] px-4 pointer-events-none z-40">
-        <button
-          onClick={() => onNavigate('BOOKING')}
-          className="pointer-events-auto w-full flex items-center justify-center gap-2 rounded-xl bg-primary hover:bg-blue-700 text-white p-4 shadow-lg shadow-primary/30 active:scale-95 transition-transform"
-        >
-          <span className="material-symbols-outlined">add</span>
-          <span className="font-bold text-base">Novo Agendamento</span>
-        </button>
-      </div>
 
       <BottomNav active="MY_APPOINTMENTS" onNavigate={onNavigate} />
     </div>
