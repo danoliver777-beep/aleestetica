@@ -53,6 +53,7 @@ const AdminDashboardScreen: React.FC<AdminDashboardProps> = ({ onNavigate }) => 
   };
 
   const loadFinancialData = async () => {
+    if (role !== UserRole.ADMIN) return;
     setFinancialLoading(true);
     try {
       const [statsData, historyData] = await Promise.all([
