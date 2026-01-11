@@ -24,39 +24,42 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     useEffect(() => {
         const fetchRole = async (user: User) => {
+            // Priority check for admin email to avoid race conditions
+            if (user.email === 'admin@admin.com') {
+                setRole(UserRole.ADMIN);
+            }
+
             try {
-                // Hardcoded fallback for the main admin
-                if (user.email === 'admin@admin.com') {
-                    setRole(UserRole.ADMIN);
-                    return UserRole.ADMIN;
-                }
                 const profile = await getProfile(user.id);
-                const userRole = (profile?.role as UserRole) ?? UserRole.CLIENT;
-                setRole(userRole);
-                return userRole;
+                if (profile?.role) {
+                    setRole(profile.role as UserRole);
+                } else if (user.email !== 'admin@admin.com') {
+                    setRole(UserRole.CLIENT);
+                }
             } catch (err) {
                 console.error('Error fetching role:', err);
-                setRole(UserRole.CLIENT);
-                return UserRole.CLIENT;
+                if (user.email !== 'admin@admin.com') {
+                    setRole(UserRole.CLIENT);
+                }
             }
         };
 
         // Check active session
-        supabase.auth.getSession().then(async ({ data: { session } }) => {
+        supabase.auth.getSession().then(({ data: { session } }) => {
             setSession(session);
             setUser(session?.user ?? null);
             if (session?.user) {
-                await fetchRole(session.user);
+                fetchRole(session.user);
             }
             setLoading(false);
         });
 
         // Listen for changes
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
             setSession(session);
             setUser(session?.user ?? null);
             if (session?.user) {
-                await fetchRole(session.user);
+                fetchRole(session.user);
             } else {
                 setRole(null);
             }
