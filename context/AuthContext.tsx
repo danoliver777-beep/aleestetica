@@ -23,32 +23,40 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const [role, setRole] = useState<UserRole | null>(null);
 
     useEffect(() => {
-        const fetchRole = async (userId: string) => {
+        const fetchRole = async (user: User) => {
             try {
-                const profile = await getProfile(userId);
-                setRole(profile?.role as UserRole ?? UserRole.CLIENT);
+                // Hardcoded fallback for the main admin
+                if (user.email === 'admin@admin.com') {
+                    setRole(UserRole.ADMIN);
+                    return UserRole.ADMIN;
+                }
+                const profile = await getProfile(user.id);
+                const userRole = (profile?.role as UserRole) ?? UserRole.CLIENT;
+                setRole(userRole);
+                return userRole;
             } catch (err) {
                 console.error('Error fetching role:', err);
                 setRole(UserRole.CLIENT);
+                return UserRole.CLIENT;
             }
         };
 
         // Check active session
-        supabase.auth.getSession().then(({ data: { session } }) => {
+        supabase.auth.getSession().then(async ({ data: { session } }) => {
             setSession(session);
             setUser(session?.user ?? null);
             if (session?.user) {
-                fetchRole(session.user.id);
+                await fetchRole(session.user);
             }
             setLoading(false);
         });
 
         // Listen for changes
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
             setSession(session);
             setUser(session?.user ?? null);
             if (session?.user) {
-                fetchRole(session.user.id);
+                await fetchRole(session.user);
             } else {
                 setRole(null);
             }
