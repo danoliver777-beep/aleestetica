@@ -93,6 +93,37 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         return () => subscription.unsubscribe();
     }, []);
 
+    // Auto-logout after 15 minutes of inactivity
+    useEffect(() => {
+        let inactivityTimer: any;
+
+        const resetInactivityTimer = () => {
+            if (inactivityTimer) clearTimeout(inactivityTimer);
+            if (session) {
+                inactivityTimer = setTimeout(() => {
+                    console.log('User inactive for 15 minutes. Logging out.');
+                    signOut();
+                }, 15 * 60 * 1000); // 15 minutes
+            }
+        };
+
+        const activityEvents = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
+
+        if (session) {
+            resetInactivityTimer();
+            activityEvents.forEach(event => {
+                window.addEventListener(event, resetInactivityTimer);
+            });
+        }
+
+        return () => {
+            if (inactivityTimer) clearTimeout(inactivityTimer);
+            activityEvents.forEach(event => {
+                window.removeEventListener(event, resetInactivityTimer);
+            });
+        };
+    }, [session]);
+
     const signOut = async () => {
         try {
             await supabase.auth.signOut();
