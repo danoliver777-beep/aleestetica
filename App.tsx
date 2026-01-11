@@ -43,7 +43,8 @@ const AppContent: React.FC = () => {
         // If already on a logged-in screen, don't force redirect to home/dashboard on every render
         // But if on LOGIN, go to dashboard/home
         if (currentScreen === 'LOGIN') {
-          setCurrentScreen(role === UserRole.ADMIN ? 'ADMIN_DASHBOARD' : 'HOME');
+          const isAdminOrStaff = role === UserRole.ADMIN || role === UserRole.STAFF;
+          setCurrentScreen(isAdminOrStaff ? 'ADMIN_DASHBOARD' : 'HOME');
         }
       } else {
         setCurrentScreen('LOGIN');

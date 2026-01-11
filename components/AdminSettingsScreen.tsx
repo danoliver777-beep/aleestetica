@@ -394,15 +394,16 @@ const AdminSettingsScreen: React.FC<AdminSettingsProps> = ({ onNavigate }) => {
 
             <main className="flex-1 px-4 pt-6 overflow-y-auto">
                 <div className="space-y-4">
-                    {/* Perfil do Admin */}
                     <section className="bg-white rounded-2xl p-4 shadow-sm">
                         <h3 className="text-sm font-bold text-gray-500 mb-4">Conta</h3>
                         <div className="flex items-center gap-4 p-3 bg-gray-50 rounded-xl">
                             <div className="h-12 w-12 rounded-full bg-primary/20 flex items-center justify-center">
-                                <span className="material-symbols-outlined text-primary">person</span>
+                                <span className="material-symbols-outlined text-primary">
+                                    {role === UserRole.ADMIN ? 'shield_person' : 'badge'}
+                                </span>
                             </div>
                             <div>
-                                <p className="font-bold">Administrador</p>
+                                <p className="font-bold">{role === UserRole.ADMIN ? 'Administrador' : 'Funcionário Staff'}</p>
                                 <p className="text-xs text-gray-500">{user?.email}</p>
                             </div>
                         </div>
