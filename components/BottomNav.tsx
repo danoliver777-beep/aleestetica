@@ -13,35 +13,34 @@ const BottomNav: React.FC<BottomNavProps> = ({ active, onNavigate }) => {
       <div className="flex justify-between items-center h-16">
         <button
           onClick={() => onNavigate('HOME')}
-          className={`flex flex-col items-center justify-center gap-1 w-16 transition-colors ${active === 'HOME' ? 'text-primary' : 'text-gray-400'}`}
+          className={`flex flex-col items-center justify-center gap-1 w-16 transition-all ${active === 'HOME' ? 'text-primary scale-110' : 'text-gray-400'}`}
         >
-          <span className={`material-symbols-outlined ${active === 'HOME' ? 'filled' : ''}`}>home</span>
+          <span className={`material-symbols-outlined !text-[28px] ${active === 'HOME' ? 'filled' : ''}`} style={{ fontVariationSettings: "'wght' 700" }}>home</span>
           <span className="text-[10px] font-bold">Home</span>
         </button>
 
         <button
           onClick={() => onNavigate('MY_APPOINTMENTS')}
-          className={`flex flex-col items-center justify-center gap-1 w-16 transition-colors ${active === 'MY_APPOINTMENTS' ? 'text-primary' : 'text-gray-400'}`}
+          className={`flex flex-col items-center justify-center gap-1 w-16 transition-all ${active === 'MY_APPOINTMENTS' ? 'text-primary scale-110' : 'text-gray-400'}`}
         >
-          <span className={`material-symbols-outlined ${active === 'MY_APPOINTMENTS' ? 'filled' : ''}`}>calendar_month</span>
-          <span className="text-[10px] font-medium">Agenda</span>
+          <span className={`material-symbols-outlined !text-[28px] ${active === 'MY_APPOINTMENTS' ? 'filled' : ''}`} style={{ fontVariationSettings: "'wght' 700" }}>calendar_month</span>
+          <span className="text-[10px] font-bold">Agenda</span>
         </button>
-
 
         <button
           onClick={() => onNavigate('PET_REGISTRATION')}
-          className={`flex flex-col items-center justify-center gap-1 w-16 transition-colors ${active === 'PET_REGISTRATION' ? 'text-primary' : 'text-gray-400'}`}
+          className={`flex flex-col items-center justify-center gap-1 w-16 transition-all ${active === 'PET_REGISTRATION' ? 'text-primary scale-110' : 'text-gray-400'}`}
         >
-          <span className={`material-symbols-outlined ${active === 'PET_REGISTRATION' ? 'filled' : ''}`}>pets</span>
-          <span className="text-[10px] font-medium">Pets</span>
+          <span className={`material-symbols-outlined !text-[28px] ${active === 'PET_REGISTRATION' ? 'filled' : ''}`} style={{ fontVariationSettings: "'wght' 700" }}>pets</span>
+          <span className="text-[10px] font-bold">Pets</span>
         </button>
 
         <button
           onClick={() => onNavigate('PROFILE')}
-          className={`flex flex-col items-center justify-center gap-1 w-16 transition-colors ${active === 'PROFILE' ? 'text-primary' : 'text-gray-400'}`}
+          className={`flex flex-col items-center justify-center gap-1 w-16 transition-all ${active === 'PROFILE' ? 'text-primary scale-110' : 'text-gray-400'}`}
         >
-          <span className={`material-symbols-outlined ${active === 'PROFILE' ? 'filled' : ''}`}>person</span>
-          <span className="text-[10px] font-medium">Perfil</span>
+          <span className={`material-symbols-outlined !text-[28px] ${active === 'PROFILE' ? 'filled' : ''}`} style={{ fontVariationSettings: "'wght' 700" }}>person</span>
+          <span className="text-[10px] font-bold">Perfil</span>
         </button>
       </div>
       <div className="h-4 w-full"></div>
