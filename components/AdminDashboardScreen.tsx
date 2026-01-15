@@ -345,8 +345,16 @@ const AdminDashboardScreen: React.FC<AdminDashboardProps> = ({ onNavigate }) => 
 
               {/* Client Info */}
               <div className="flex items-start gap-4">
-                <div className="h-10 w-10 shrink-0 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-500">
-                  <span className="material-symbols-outlined">person</span>
+                <div className="h-10 w-10 shrink-0 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-500 overflow-hidden">
+                  {selectedAppointment.profile?.avatar_url ? (
+                    <img
+                      src={selectedAppointment.profile.avatar_url}
+                      alt={selectedAppointment.profile.full_name || 'Tutor'}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <span className="material-symbols-outlined">person</span>
+                  )}
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center justify-between">
