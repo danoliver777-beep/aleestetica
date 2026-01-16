@@ -375,7 +375,7 @@ const BookingScreen: React.FC<BookingProps> = ({ service: initialService, onBack
               ))}
             </div>
           </section> */}
-          <p className="text-sm text-gray-500 dark:text-gray-400 italic mb-4">O horário será definido pelo estabelecimento e confirmado com você.</p>
+          <p className="text-sm text-primary font-medium text-center mb-32 px-2">⏰ O horário será definido pelo estabelecimento.</p>
         </section>
       </main>
 
