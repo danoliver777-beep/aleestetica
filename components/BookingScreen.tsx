@@ -19,7 +19,7 @@ const BookingScreen: React.FC<BookingProps> = ({ service: initialService, onBack
   );
   const [isServiceConfirmed, setIsServiceConfirmed] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string>('');
-  const [selectedTime, setSelectedTime] = useState('14:00');
+  const [selectedTime, setSelectedTime] = useState('A definir');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [selectedExtras, setSelectedExtras] = useState<string[]>([]);
@@ -66,7 +66,7 @@ const BookingScreen: React.FC<BookingProps> = ({ service: initialService, onBack
   };
 
   const handleConfirm = async () => {
-    if (!user || !selectedPetId || selectedServices.length === 0 || !selectedDate || !selectedTime) {
+    if (!user || !selectedPetId || selectedServices.length === 0 || !selectedDate) {
       alert('Por favor, preencha todos os campos');
       return;
     }
@@ -360,8 +360,8 @@ const BookingScreen: React.FC<BookingProps> = ({ service: initialService, onBack
             <p className="text-gray-400 text-xs mt-2">Horário: Ter-Sáb, 07h-12h e 13h-19h</p>
           </section>
 
-          {/* Time Selection */}
-          <section className="mb-4">
+          {/* Time Selection - Temporariamente desabilitado: horário será definido pelo estabelecimento */}
+          {/* <section className="mb-4">
             <h2 className="text-lg font-bold mb-3">Horários disponíveis</h2>
             <div className="grid grid-cols-3 gap-3">
               {times.map(time => (
@@ -374,11 +374,12 @@ const BookingScreen: React.FC<BookingProps> = ({ service: initialService, onBack
                 </button>
               ))}
             </div>
-          </section>
+          </section> */}
+          <p className="text-sm text-gray-500 dark:text-gray-400 italic mb-4">O horário será definido pelo estabelecimento e confirmado com você.</p>
         </section>
       </main>
 
-      {isServiceConfirmed && selectedPetId && selectedDate && selectedTime && (
+      {isServiceConfirmed && selectedPetId && selectedDate && (
         <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white dark:bg-gray-900 border-t border-gray-200 p-4 pb-6 shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.1)] z-30 animate-in slide-in-from-bottom duration-300">
           <div className="flex items-center justify-between mb-4 px-1">
             <div className="flex flex-col">
@@ -387,7 +388,7 @@ const BookingScreen: React.FC<BookingProps> = ({ service: initialService, onBack
             </div>
             <div className="text-right">
               <span className="text-[10px] text-gray-500 block">Agendado para</span>
-              <span className="text-xs font-semibold text-primary">{selectedDate} às {selectedTime}</span>
+              <span className="text-xs font-semibold text-primary">{selectedDate}</span>
             </div>
           </div>
           <button
