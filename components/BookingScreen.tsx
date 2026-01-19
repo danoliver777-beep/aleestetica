@@ -213,7 +213,7 @@ const BookingScreen: React.FC<BookingProps> = ({ service: initialService, onBack
                 {svc.subtypes && svc.subtypes.length > 0 && (
                   <div className="mt-4 pt-4 border-t border-gray-50 dark:border-gray-700/50">
                     <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2.5">
-                      Variações e Subtipos:
+                      Adicionar serviços extras:
                     </p>
                     <div className="flex flex-col gap-2">
                       {svc.subtypes.map((st, idx) => {
