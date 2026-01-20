@@ -99,7 +99,9 @@ const AdminCalendarView: React.FC<AdminCalendarViewProps> = ({
 
         const newTime = `${String(hour).padStart(2, '0')}:00`;
 
-        if (draggedAppointment.scheduled_date === date && draggedAppointment.scheduled_time.startsWith(`${String(hour).padStart(2, '0')}:`)) {
+        if (draggedAppointment.scheduled_date === date &&
+            draggedAppointment.scheduled_time &&
+            draggedAppointment.scheduled_time.startsWith(`${String(hour).padStart(2, '0')}:`)) {
             setDraggedAppointment(null);
             return;
         }
@@ -350,7 +352,9 @@ const AdminCalendarView: React.FC<AdminCalendarViewProps> = ({
                                             <span className="text-[9px] text-gray-400">
                                                 {new Date(app.scheduled_date + 'T00:00:00').toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit' })}
                                             </span>
-                                            <span className="text-[10px] font-bold text-primary">{app.scheduled_time.substring(0, 5)}</span>
+                                            <span className="text-[10px] font-bold text-primary">
+                                                {app.scheduled_time ? app.scheduled_time.substring(0, 5) : 'A definir'}
+                                            </span>
                                         </div>
                                     </div>
                                 );
@@ -587,8 +591,8 @@ const WeekViewCompact: React.FC<WeekViewCompactProps> = ({
                                 })}
 
                                 {/* Positioned appointments */}
-                                {dayApps.map((app: AppointmentWithDetails) => {
-                                    const [h, m] = app.scheduled_time.split(':').map(Number);
+                                {dayApps.filter(app => app.scheduled_time).map((app: AppointmentWithDetails) => {
+                                    const [h, m] = app.scheduled_time!.split(':').map(Number);
                                     const startHour = 7;
                                     // Mobile: 48px per hour, Desktop: 56px
                                     const topMobile = ((h - startHour) * 48) + ((m / 60) * 48);
