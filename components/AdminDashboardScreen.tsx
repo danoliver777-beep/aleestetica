@@ -210,11 +210,11 @@ const AdminDashboardScreen: React.FC<AdminDashboardProps> = ({ onNavigate }) => 
                   const weekday = dateObj.toLocaleDateString('pt-BR', { weekday: 'long' });
 
                   return (
-                    app.pet?.name.toLowerCase().includes(term) ||
+                    app.pet?.name?.toLowerCase().includes(term) ||
                     app.profile?.full_name?.toLowerCase().includes(term) ||
                     app.profile?.address?.toLowerCase().includes(term) ||
                     app.profile?.neighborhood?.toLowerCase().includes(term) ||
-                    app.service?.name.toLowerCase().includes(term) ||
+                    app.service?.name?.toLowerCase().includes(term) ||
                     dateBr.includes(term) ||
                     dateDirect.includes(term) ||
                     weekday.toLowerCase().includes(term)
@@ -254,7 +254,7 @@ const AdminDashboardScreen: React.FC<AdminDashboardProps> = ({ onNavigate }) => 
                       <div className="flex justify-between items-center mb-0.5">
                         <p className="text-base font-bold">{app.pet?.name || 'Pet'}</p>
                         <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${app.status === 'PENDING' ? 'bg-orange-100 text-orange-700' : 'bg-green-100 text-green-700'}`}>
-                          {app.scheduled_time.substring(0, 5)}
+                          {app.scheduled_time ? app.scheduled_time.substring(0, 5) : 'A definir'}
                         </span>
                       </div>
                       <p className="line-clamp-1 text-xs text-gray-500">
@@ -333,7 +333,7 @@ const AdminDashboardScreen: React.FC<AdminDashboardProps> = ({ onNavigate }) => 
                     {new Date(selectedAppointment.scheduled_date + 'T00:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
                   </p>
                   <p className="text-gray-600 dark:text-gray-400 text-sm mt-0.5">
-                    às {selectedAppointment.scheduled_time.substring(0, 5)}
+                    às {selectedAppointment.scheduled_time ? selectedAppointment.scheduled_time.substring(0, 5) : 'A definir'}
                   </p>
                 </div>
               </div>
