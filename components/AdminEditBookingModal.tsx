@@ -41,7 +41,7 @@ const AdminEditBookingModal: React.FC<AdminEditBookingModalProps> = ({
             loadInitialData();
             setSelectedServiceId(appointment.service_id || '');
             setDate(appointment.scheduled_date);
-            setTime(appointment.scheduled_time.substring(0, 5));
+            setTime(appointment.scheduled_time ? appointment.scheduled_time.substring(0, 5) : '09:00');
             setNotes(appointment.notes || '');
         }
     }, [isOpen, appointment]);
@@ -67,7 +67,8 @@ const AdminEditBookingModal: React.FC<AdminEditBookingModalProps> = ({
         setSaving(true);
         try {
             // Only check for conflict if date or time changed
-            if (date !== appointment.scheduled_date || time !== appointment.scheduled_time.substring(0, 5)) {
+            const oldTime = appointment.scheduled_time ? appointment.scheduled_time.substring(0, 5) : null;
+            if (date !== appointment.scheduled_date || time !== oldTime) {
                 const { hasConflict } = await checkTimeConflict(date, time);
                 if (hasConflict) {
                     const proceed = confirm(`⚠️ Conflito de horário detectado! Já existe um agendamento para este horário em ${date}. Deseja continuar mesmo assim?`);
@@ -145,7 +146,7 @@ const AdminEditBookingModal: React.FC<AdminEditBookingModalProps> = ({
                                         <span className="text-xs font-medium">{appointment.profile?.full_name}</span>
                                     </div>
                                 </div>
-                                <button 
+                                <button
                                     onClick={handleWhatsApp}
                                     className="flex size-12 items-center justify-center rounded-full bg-[#25D366] text-white hover:bg-[#20bd5a] transition-all shadow-md active:scale-90"
                                     title="Falar no WhatsApp"
