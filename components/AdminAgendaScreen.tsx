@@ -263,7 +263,7 @@ const AdminAgendaScreen: React.FC<AdminAgendaProps> = ({ onNavigate }) => {
                       </div>
                       <div className="mt-1 flex items-center gap-1 text-xs font-medium text-primary">
                         <span className="material-symbols-outlined text-[14px]">access_time</span>
-                        {app.scheduled_time.substring(0, 5)}
+                        {app.scheduled_time ? app.scheduled_time.substring(0, 5) : 'A definir'}
                       </div>
                     </div>
                   </div>

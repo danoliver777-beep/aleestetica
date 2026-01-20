@@ -167,7 +167,7 @@ export interface Appointment {
     pet_id: string | null;
     service_id: string | null;
     scheduled_date: string;
-    scheduled_time: string;
+    scheduled_time: string | null;
     status: string;
     notes: string | null;
     created_at: string;
@@ -250,7 +250,7 @@ export const createAppointment = async (appointment: {
     pet_id: string;
     service_id: string;
     scheduled_date: string;
-    scheduled_time: string;
+    scheduled_time: string | null;
     notes?: string;
 }) => {
     const { data, error } = await supabase

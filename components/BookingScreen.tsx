@@ -79,8 +79,12 @@ const BookingScreen: React.FC<BookingProps> = ({ service: initialService, onBack
 
     setSaving(true);
     try {
-      // Verificar conflito de horário
-      const { hasConflict } = await checkTimeConflict(selectedDate, selectedTime);
+      // Verificar conflito de horário (apenas se houver horário definido)
+      let hasConflict = false;
+      if (selectedTime !== 'A definir') {
+        const conflictResult = await checkTimeConflict(selectedDate, selectedTime);
+        hasConflict = conflictResult.hasConflict;
+      }
 
       if (hasConflict) {
         alert(
@@ -104,7 +108,7 @@ const BookingScreen: React.FC<BookingProps> = ({ service: initialService, onBack
         pet_id: selectedPetId,
         service_id: selectedServices[0].serviceId, // Usamos o primeiro como ID principal
         scheduled_date: selectedDate,
-        scheduled_time: selectedTime,
+        scheduled_time: selectedTime === 'A definir' ? null : selectedTime,
         notes: noteContent.trim() || undefined
       });
       alert('Agendamento criado com sucesso!');
