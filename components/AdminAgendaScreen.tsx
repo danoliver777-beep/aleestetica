@@ -162,7 +162,7 @@ const AdminAgendaScreen: React.FC<AdminAgendaProps> = ({ onNavigate }) => {
       {/* Notification Banner for 'A Definir' Appointments */}
       {!loading && toDefineCount > 0 && (
         <div
-          onClick={() => setFilter('PENDING')}
+          onClick={openCalendar}
           className="mx-4 mt-4 p-3 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-lg shadow-orange-200 cursor-pointer hover:shadow-xl transition-all animate-in slide-in-from-top duration-300"
         >
           <div className="flex items-center gap-3">
