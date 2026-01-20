@@ -127,12 +127,20 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const signOut = async () => {
         try {
             await supabase.auth.signOut();
+
+            // Reforce clearing local storage to prevent auto-login on some browsers/mobile
+            for (const key in localStorage) {
+                if (key.includes('supabase.auth.token') || key.startsWith('sb-')) {
+                    localStorage.removeItem(key);
+                }
+            }
         } catch (error) {
             console.error('Error signing out:', error);
         } finally {
             setSession(null);
             setUser(null);
             setRole(null);
+            // Force a slight delay or just let the state change handle the UI
         }
     };
 
