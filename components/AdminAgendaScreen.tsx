@@ -27,7 +27,7 @@ const AdminAgendaScreen: React.FC<AdminAgendaProps> = ({ onNavigate }) => {
   const loadAppointments = async () => {
     setLoading(true);
     try {
-      const data = await getAllAppointments(selectedDate);
+      const data = await getAllAppointments({ date: selectedDate });
       setAppointments(data);
     } catch (err) {
       console.error('Error loading appointments:', err);
@@ -39,8 +39,8 @@ const AdminAgendaScreen: React.FC<AdminAgendaProps> = ({ onNavigate }) => {
   const openCalendar = async () => {
     setLoading(true);
     try {
-      // Load ALL appointments for calendar view
-      const allData = await getAllAppointments();
+      // Load ALL appointments for calendar view (increased limit for global view)
+      const allData = await getAllAppointments({ limit: 500 });
       setCalendarAppointments(allData);
       setShowCalendarView(true);
     } catch (err) {

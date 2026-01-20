@@ -30,21 +30,16 @@ const AdminDashboardScreen: React.FC<AdminDashboardProps> = ({ onNavigate }) => 
   const loadData = async () => {
     setLoading(true);
     try {
-      // Fetch stats and ALL upcoming appointments (no date filter)
+      const today = new Date().toISOString().split('T')[0];
+      // Fetch stats and ONLY upcoming appointments (filtered at DB level)
       const [statsData, appointmentsData] = await Promise.all([
         getAdminStats(),
-        getAllAppointments() // Remove date filter to get all appointments
+        getAllAppointments({ startDate: today, limit: 50 })
       ]);
       setStats(statsData);
-      // Filter to show only future or today's appointments, sorted by date
-      const today = new Date().toISOString().split('T')[0];
-      const upcoming = appointmentsData
-        .filter(a => a.scheduled_date >= today)
-        .sort((a, b) => {
-          if (a.scheduled_date !== b.scheduled_date) return a.scheduled_date.localeCompare(b.scheduled_date);
-          return a.scheduled_time.localeCompare(b.scheduled_time);
-        });
-      setAllUpcomingAppointments(upcoming);
+
+      // Data is already filtered and sorted by DB
+      setAllUpcomingAppointments(appointmentsData);
     } catch (err) {
       console.error('Error loading admin data:', err);
     } finally {

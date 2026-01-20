@@ -38,11 +38,13 @@ const ClientHomeScreen: React.FC<ClientHomeProps> = ({ onNavigate, onSelectServi
     if (!user) return;
     setLoading(true);
     try {
+      const todayStr = new Date().toISOString().split('T')[0];
       const [profileData, petsData, servicesData, appointmentsData, dbNotificationsData] = await Promise.all([
         getProfile(user.id),
         getPets(user.id),
         getServices(),
-        getAppointments(user.id),
+        // Only fetch recent appointments for the home screen notifications/display
+        getAppointments(user.id), // We should probably add a limit/date filter here too if database.ts supported it for user view
         getNotifications(user.id)
       ]);
       setProfile(profileData);
@@ -118,6 +120,9 @@ const ClientHomeScreen: React.FC<ClientHomeProps> = ({ onNavigate, onSelectServi
     }
   };
 
+  // Memoize notifications to avoid UI flicker/process on every render
+  const memoizedNotifications = React.useMemo(() => notifications, [notifications]);
+
   const toggleDescription = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     setExpandedDescriptions(prev => {
@@ -171,9 +176,9 @@ const ClientHomeScreen: React.FC<ClientHomeProps> = ({ onNavigate, onSelectServi
               className="flex size-10 items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors relative"
             >
               <span className="material-symbols-outlined">notifications</span>
-              {notifications.filter(n => !n.read).length > 0 && (
+              {memoizedNotifications.filter(n => !n.read).length > 0 && (
                 <span className="absolute -top-1 -right-1 size-4 bg-red-500 rounded-full border-2 border-white dark:border-[#1A202C] flex items-center justify-center">
-                  <span className="text-[8px] font-bold text-white">{notifications.filter(n => !n.read).length > 9 ? '9+' : notifications.filter(n => !n.read).length}</span>
+                  <span className="text-[8px] font-bold text-white">{memoizedNotifications.filter(n => !n.read).length > 9 ? '9+' : memoizedNotifications.filter(n => !n.read).length}</span>
                 </span>
               )}
             </button>
@@ -359,13 +364,13 @@ const ClientHomeScreen: React.FC<ClientHomeProps> = ({ onNavigate, onSelectServi
 
             {/* Notifications List */}
             <div className="overflow-y-auto max-h-[60vh] p-4 space-y-3">
-              {notifications.length === 0 ? (
+              {memoizedNotifications.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12 text-gray-400">
                   <span className="material-symbols-outlined text-5xl mb-2">notifications_off</span>
                   <p className="text-sm">Nenhuma notificação</p>
                 </div>
               ) : (
-                notifications.map((notification) => (
+                memoizedNotifications.map((notification) => (
                   <div
                     key={notification.id}
                     onClick={async () => {

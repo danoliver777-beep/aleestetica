@@ -236,7 +236,8 @@ export const getAppointments = async (userId: string): Promise<Appointment[]> =>
       service:services(*)
     `)
         .eq('user_id', userId)
-        .order('scheduled_date', { ascending: true });
+        .order('scheduled_date', { ascending: true })
+        .limit(20);
 
     if (error) {
         console.error('Error fetching appointments:', error);
@@ -376,7 +377,12 @@ export interface AppointmentWithDetails extends Appointment {
 }
 
 // Get ALL appointments (for admin)
-export const getAllAppointments = async (dateFilter?: string): Promise<AppointmentWithDetails[]> => {
+export const getAllAppointments = async (options?: {
+    date?: string;
+    startDate?: string;
+    limit?: number
+}): Promise<AppointmentWithDetails[]> => {
+    const { date: dateFilter, startDate, limit = 100 } = options || {};
     // First, get appointments with pet and service (but NOT profile, since FK points to auth.users)
     let query = supabase
         .from('appointments')
@@ -390,6 +396,12 @@ export const getAllAppointments = async (dateFilter?: string): Promise<Appointme
 
     if (dateFilter) {
         query = query.eq('scheduled_date', dateFilter);
+    } else if (startDate) {
+        query = query.gte('scheduled_date', startDate);
+    }
+
+    if (limit && !dateFilter) {
+        query = query.limit(limit);
     }
 
     const { data: appointments, error } = await query;
