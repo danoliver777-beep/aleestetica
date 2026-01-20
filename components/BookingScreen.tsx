@@ -22,7 +22,7 @@ const BookingScreen: React.FC<BookingProps> = ({ service: initialService, onBack
   const [selectedTime, setSelectedTime] = useState('A definir');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [selectedExtras, setSelectedExtras] = useState<string[]>([]);
+
 
   // Horários de funcionamento: 07:00-12:00 e 13:00-19:00 (intervalo de almoço 12-13)
   const times = ['07:00', '08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00'];
@@ -97,9 +97,7 @@ const BookingScreen: React.FC<BookingProps> = ({ service: initialService, onBack
         noteContent += `- ${s.name}: R$ ${s.price.toFixed(2)}\n`;
       });
 
-      if (selectedExtras.length > 0) {
-        noteContent += `\nAdicionais (Extras): ${selectedExtras.join(', ')}\n`;
-      }
+
 
       await createAppointment({
         user_id: user.id,
@@ -122,17 +120,7 @@ const BookingScreen: React.FC<BookingProps> = ({ service: initialService, onBack
   const calculateTotal = () => {
     let total = selectedServices.reduce((sum, s) => sum + s.price, 0);
 
-    selectedExtras.forEach(extraName => {
-      // Procuramos o extra em todos os serviços selecionados
-      for (const selSvc of selectedServices) {
-        const fullSvc = services.find(s => s.id === selSvc.serviceId);
-        const extra = fullSvc?.extras?.find(e => e.name === extraName);
-        if (extra) {
-          total += extra.price;
-          break; // Extra adicionado uma vez
-        }
-      }
-    });
+
 
     return total;
   };
@@ -149,11 +137,7 @@ const BookingScreen: React.FC<BookingProps> = ({ service: initialService, onBack
     });
   };
 
-  const toggleExtra = (name: string) => {
-    setSelectedExtras(prev =>
-      prev.includes(name) ? prev.filter(e => e !== name) : [...prev, name]
-    );
-  };
+
 
   if (loading) {
     return (
@@ -282,38 +266,7 @@ const BookingScreen: React.FC<BookingProps> = ({ service: initialService, onBack
 
         <section className={`transition-all duration-300 ${!isServiceConfirmed ? 'opacity-30 pointer-events-none grayscale' : ''}`}>
 
-          {/* Extras Selection */}
-          {selectedServices.length > 0 && (
-            <section className={`mb-6 transition-all duration-300 ${!isServiceConfirmed ? 'opacity-30 pointer-events-none grayscale' : ''}`}>
-              <h2 className="text-lg font-bold mb-3 flex items-center gap-2">
-                <span className="material-symbols-outlined text-primary filled">add_circle</span>
-                Adicionais (Extras)
-              </h2>
-              <div className="grid grid-cols-1 gap-2">
-                {/* Mostramos extras de todos os serviços selecionados (evitando duplicados por nome) */}
-                {Array.from(new Set(
-                  selectedServices.flatMap(selSvc => {
-                    const fullSvc = services.find(s => s.id === selSvc.serviceId);
-                    return fullSvc?.extras || [];
-                  }).map(e => JSON.stringify(e))
-                )).map((eStr: any) => JSON.parse(eStr) as { name: string, price: number }).map((extra, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => toggleExtra(extra.name)}
-                    className={`flex items-center justify-between p-3 rounded-xl border transition-all ${selectedExtras.includes(extra.name) ? 'bg-blue-50 border-primary dark:bg-blue-900/20' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700'}`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <span className={`material-symbols-outlined ${selectedExtras.includes(extra.name) ? 'text-primary' : 'text-gray-300'}`}>
-                        {selectedExtras.includes(extra.name) ? 'check_box' : 'check_box_outline_blank'}
-                      </span>
-                      <span className="text-sm font-medium">{extra.name}</span>
-                    </div>
-                    <span className="text-xs font-bold text-primary">+ R$ {extra.price.toFixed(2)}</span>
-                  </button>
-                ))}
-              </div>
-            </section>
-          )}
+
 
           {/* Pet Selection */}
           <section className="mb-6">
