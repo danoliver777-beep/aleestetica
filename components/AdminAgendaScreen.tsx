@@ -87,6 +87,7 @@ const AdminAgendaScreen: React.FC<AdminAgendaProps> = ({ onNavigate }) => {
   });
 
   const pendingCount = appointments.filter(a => a.status === 'PENDING').length;
+  const toDefineCount = appointments.filter(a => !a.scheduled_time && a.status !== 'CANCELED' && a.status !== 'COMPLETED').length;
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr + 'T00:00:00');
@@ -149,6 +150,25 @@ const AdminAgendaScreen: React.FC<AdminAgendaProps> = ({ onNavigate }) => {
         </div>
       </header>
 
+      {/* Notification Banner for 'A Definir' Appointments */}
+      {!loading && toDefineCount > 0 && (
+        <div
+          onClick={() => setFilter('PENDING')}
+          className="mx-4 mt-4 p-3 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-lg shadow-orange-200 cursor-pointer hover:shadow-xl transition-all animate-in slide-in-from-top duration-300"
+        >
+          <div className="flex items-center gap-3">
+            <div className="flex size-10 items-center justify-center rounded-full bg-white/20 animate-pulse">
+              <span className="material-symbols-outlined text-xl">schedule</span>
+            </div>
+            <div className="flex-1">
+              <p className="font-bold text-sm">⏰ {toDefineCount} agendamento{toDefineCount > 1 ? 's' : ''} aguardando horário</p>
+              <p className="text-[10px] opacity-90">Toque para ver e definir os horários</p>
+            </div>
+            <span className="material-symbols-outlined">chevron_right</span>
+          </div>
+        </div>
+      )}
+
       {/* Stats */}
       <section className="p-4 grid grid-cols-2 gap-4">
         <div className="flex flex-col gap-3 rounded-xl bg-white p-4 shadow-sm border border-slate-100">
@@ -163,16 +183,19 @@ const AdminAgendaScreen: React.FC<AdminAgendaProps> = ({ onNavigate }) => {
             <p className="text-[10px] text-slate-500">Agendamentos</p>
           </div>
         </div>
-        <div className="flex flex-col gap-3 rounded-xl bg-white p-4 shadow-sm border border-slate-100">
+        <div
+          onClick={() => toDefineCount > 0 && setFilter('PENDING')}
+          className={`flex flex-col gap-3 rounded-xl bg-white p-4 shadow-sm border transition-all ${toDefineCount > 0 ? 'border-orange-300 cursor-pointer hover:border-orange-400 hover:shadow-md' : 'border-slate-100'}`}
+        >
           <div className="flex items-center gap-2">
-            <div className="flex size-8 items-center justify-center rounded-full bg-orange-50 text-orange-600">
-              <span className="material-symbols-outlined text-[20px]">pending_actions</span>
+            <div className={`flex size-8 items-center justify-center rounded-full bg-orange-50 text-orange-600 ${toDefineCount > 0 ? 'animate-pulse' : ''}`}>
+              <span className="material-symbols-outlined text-[20px]">schedule</span>
             </div>
-            <p className="text-sm font-medium text-slate-600">Pendentes</p>
+            <p className="text-sm font-medium text-slate-600">A Definir</p>
           </div>
           <div>
-            <p className="text-2xl font-bold">{loading ? '...' : pendingCount}</p>
-            <p className="text-[10px] text-slate-500">Ações necessárias</p>
+            <p className="text-2xl font-bold text-orange-600">{loading ? '...' : toDefineCount}</p>
+            <p className="text-[10px] text-slate-500">Aguardando horário</p>
           </div>
         </div>
       </section>
