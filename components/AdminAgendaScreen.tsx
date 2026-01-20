@@ -19,6 +19,7 @@ const AdminAgendaScreen: React.FC<AdminAgendaProps> = ({ onNavigate }) => {
   const [showCalendarView, setShowCalendarView] = useState(false);
   const [calendarAppointments, setCalendarAppointments] = useState<AppointmentWithDetails[]>([]);
   const [openedFromCalendar, setOpenedFromCalendar] = useState(false);
+  const [allToDefineCount, setAllToDefineCount] = useState(0);
 
   useEffect(() => {
     loadAppointments();
@@ -27,8 +28,15 @@ const AdminAgendaScreen: React.FC<AdminAgendaProps> = ({ onNavigate }) => {
   const loadAppointments = async () => {
     setLoading(true);
     try {
-      const data = await getAllAppointments({ date: selectedDate });
-      setAppointments(data);
+      // Load appointments for selected date AND count all 'a definir' appointments
+      const [dateData, allData] = await Promise.all([
+        getAllAppointments({ date: selectedDate }),
+        getAllAppointments({ limit: 500 })
+      ]);
+      setAppointments(dateData);
+      // Count all 'a definir' appointments across all dates
+      const toDefine = allData.filter(a => !a.scheduled_time && a.status !== 'CANCELED' && a.status !== 'COMPLETED');
+      setAllToDefineCount(toDefine.length);
     } catch (err) {
       console.error('Error loading appointments:', err);
     } finally {
@@ -87,7 +95,8 @@ const AdminAgendaScreen: React.FC<AdminAgendaProps> = ({ onNavigate }) => {
   });
 
   const pendingCount = appointments.filter(a => a.status === 'PENDING').length;
-  const toDefineCount = appointments.filter(a => !a.scheduled_time && a.status !== 'CANCELED' && a.status !== 'COMPLETED').length;
+  // Use the global count for 'a definir' across all dates
+  const toDefineCount = allToDefineCount;
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr + 'T00:00:00');
