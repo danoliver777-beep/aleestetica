@@ -323,7 +323,7 @@ export const uploadAvatar = async (userId: string, file: File): Promise<string |
     const filePath = `${userId}/avatar.${fileExt}`;
 
     const { error: uploadError } = await supabase.storage
-        .from('pets')
+        .from('avatars')
         .upload(filePath, file, { upsert: true });
 
     if (uploadError) {
@@ -331,7 +331,7 @@ export const uploadAvatar = async (userId: string, file: File): Promise<string |
         throw uploadError;
     }
 
-    const { data } = supabase.storage.from('pets').getPublicUrl(filePath);
+    const { data } = supabase.storage.from('avatars').getPublicUrl(filePath);
     return data.publicUrl;
 };
 
