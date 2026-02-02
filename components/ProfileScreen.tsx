@@ -235,12 +235,12 @@ const ProfileScreen: React.FC<ProfileProps> = ({ onNavigate }) => {
           </h3>
           <div className="space-y-4">
             <div className="space-y-1">
-              <label className="text-xs font-semibold text-gray-500 ml-1">Como quer ser chamado? (Apelido)</label>
+              <label className="text-xs font-semibold text-gray-500 ml-1">Nome e Sobrenome / Como quer ser chamado?</label>
               <input
                 className="w-full bg-white dark:bg-surface-dark border border-gray-200 rounded-xl h-12 px-4 focus:ring-1 focus:ring-primary outline-none"
                 value={nickname}
                 onChange={(e) => setNickname(e.target.value)}
-                placeholder="Seu apelido"
+                placeholder="Seu nome e sobrenome"
               />
             </div>
             <div className="space-y-1">

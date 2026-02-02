@@ -31,7 +31,7 @@ const LoginScreen: React.FC = () => {
           await supabase.from('profiles').upsert({
             id: authData.user.id,
             nickname: nickname || email.split('@')[0],
-            full_name: email.split('@')[0],
+            full_name: nickname || email.split('@')[0],
           });
         }
 
@@ -138,12 +138,12 @@ const LoginScreen: React.FC = () => {
 
           {isSignUp && (
             <div className="space-y-1">
-              <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 ml-1">Como quer ser chamado? (Apelido)</label>
+              <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 ml-1">Nome Completo / Como quer ser chamado?</label>
               <div className="relative flex items-center">
                 <span className="material-symbols-outlined absolute left-4 text-gray-400 text-[20px]">person</span>
                 <input
                   className="w-full h-14 pl-12 pr-4 rounded-xl bg-white dark:bg-surface-dark border-transparent focus:border-primary focus:ring-2 focus:ring-primary/20 text-gray-900 dark:text-white placeholder:text-gray-400 font-medium transition-all shadow-sm outline-none"
-                  placeholder="Ex: Dani, Gui, etc."
+                  placeholder="Ex: João Silva"
                   required={isSignUp}
                   value={nickname}
                   onChange={(e) => setNickname(e.target.value)}
