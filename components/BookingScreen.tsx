@@ -84,6 +84,15 @@ const BookingScreen: React.FC<BookingProps> = ({ service: initialService, onBack
         notes: noteContent.trim() || undefined
       });
       alert('Agendamento criado com sucesso!');
+
+      // Notificar administrador via WhatsApp
+      const selectedPet = pets.find(p => p.id === selectedPetId);
+      const petName = selectedPet?.name || 'Pet';
+      const whatsappNumber = '5511999999999'; // Administrador: Alessandro
+      const message = `Olá Alessandro! Acabei de solicitar um agendamento para o pet *${petName}*.\n\n*Serviços:*\n${noteContent.replace('Serviços Selecionados:\n', '')}\nPor favor, me confirme o melhor dia e horário!`;
+      const encodedMessage = encodeURIComponent(message);
+      window.open(`https://wa.me/${whatsappNumber}?text=${encodedMessage}`, '_blank');
+
       onSuccess();
     } catch (err) {
       console.error('Error creating appointment:', err);
