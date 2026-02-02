@@ -18,8 +18,6 @@ const BookingScreen: React.FC<BookingProps> = ({ service: initialService, onBack
     initialService ? [{ serviceId: initialService.id, name: initialService.name, price: initialService.price, subtypeName: null }] : []
   );
   const [isServiceConfirmed, setIsServiceConfirmed] = useState(false);
-  const [selectedDate, setSelectedDate] = useState<string>('');
-  const [selectedTime, setSelectedTime] = useState('A definir');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -54,10 +52,6 @@ const BookingScreen: React.FC<BookingProps> = ({ service: initialService, onBack
       if (selectedServices.length === 0 && servicesData.length > 0) {
         setSelectedServices([{ serviceId: servicesData[0].id, name: servicesData[0].name, price: servicesData[0].price, subtypeName: null }]);
       }
-      // Set default date to tomorrow
-      const tomorrow = new Date();
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      setSelectedDate(tomorrow.toISOString().split('T')[0]);
     } catch (err) {
       console.error('Error loading data:', err);
     } finally {
@@ -66,35 +60,13 @@ const BookingScreen: React.FC<BookingProps> = ({ service: initialService, onBack
   };
 
   const handleConfirm = async () => {
-    if (!user || !selectedPetId || selectedServices.length === 0 || !selectedDate) {
+    if (!user || !selectedPetId || selectedServices.length === 0) {
       alert('Por favor, preencha todos os campos');
-      return;
-    }
-
-    // Validar dia da semana
-    if (!isDateAllowed(selectedDate)) {
-      alert('⚠️ Data não permitida!\n\nFuncionamos apenas de Terça a Sábado.\nPor favor, selecione outra data.');
       return;
     }
 
     setSaving(true);
     try {
-      // Verificar conflito de horário (apenas se houver horário definido)
-      let hasConflict = false;
-      if (selectedTime !== 'A definir') {
-        const conflictResult = await checkTimeConflict(selectedDate, selectedTime);
-        hasConflict = conflictResult.hasConflict;
-      }
-
-      if (hasConflict) {
-        alert(
-          '⚠️ Horário indisponível!\n\n' +
-          `Já existe um agendamento para ${selectedDate} às ${selectedTime}.\n\n` +
-          'Por favor, escolha outro horário.'
-        );
-        setSaving(false);
-        return;
-      }
 
       let noteContent = `Serviços Selecionados:\n`;
       selectedServices.forEach(s => {
@@ -107,8 +79,8 @@ const BookingScreen: React.FC<BookingProps> = ({ service: initialService, onBack
         user_id: user.id,
         pet_id: selectedPetId,
         service_id: selectedServices[0].serviceId, // Usamos o primeiro como ID principal
-        scheduled_date: selectedDate,
-        scheduled_time: selectedTime === 'A definir' ? null : selectedTime,
+        scheduled_date: null,
+        scheduled_time: null,
         notes: noteContent.trim() || undefined
       });
       alert('Agendamento criado com sucesso!');
@@ -253,7 +225,7 @@ const BookingScreen: React.FC<BookingProps> = ({ service: initialService, onBack
               className="w-full mt-4 bg-green-500 hover:bg-green-600 text-white font-bold py-3 rounded-xl shadow-lg shadow-green-200 flex items-center justify-center gap-2 animate-in fade-in slide-in-from-top-2"
             >
               <span className="material-symbols-outlined">check_circle</span>
-              Ok, escolher pet e data
+              Ok, confirmar pet
             </button>
           )}
 
@@ -298,54 +270,22 @@ const BookingScreen: React.FC<BookingProps> = ({ service: initialService, onBack
             )}
           </section>
 
-          {/* Date Selection */}
-          <section className="mb-6">
-            <h2 className="text-lg font-bold mb-3">Selecione a data</h2>
-            <input
-              type="date"
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              min={new Date().toISOString().split('T')[0]}
-              className={`w-full h-14 px-4 rounded-xl bg-white dark:bg-gray-800 border focus:ring-2 focus:ring-primary ${!isDateAllowed(selectedDate) && selectedDate ? 'border-red-400' : 'border-gray-200'}`}
-            />
-            {selectedDate && !isDateAllowed(selectedDate) && (
-              <p className="text-red-500 text-xs mt-2 flex items-center gap-1">
-                <span className="material-symbols-outlined text-sm">warning</span>
-                Funcionamos de Terça a Sábado. Selecione outro dia.
-              </p>
-            )}
-            <p className="text-gray-400 text-xs mt-2">Horário: Ter-Sáb, 07h-12h e 13h-19h</p>
-          </section>
-
-          {/* Time Selection - Temporariamente desabilitado: horário será definido pelo estabelecimento */}
-          {/* <section className="mb-4">
-            <h2 className="text-lg font-bold mb-3">Horários disponíveis</h2>
-            <div className="grid grid-cols-3 gap-3">
-              {times.map(time => (
-                <button
-                  key={time}
-                  onClick={() => setSelectedTime(time)}
-                  className={`py-3 rounded-xl font-semibold text-sm transition-all border ${selectedTime === time ? 'bg-primary text-white shadow-md shadow-primary/25 ring-2 ring-primary ring-offset-2' : 'bg-white dark:bg-gray-800 border-gray-200 text-gray-600 hover:border-primary hover:text-primary'}`}
-                >
-                  {time}
-                </button>
-              ))}
-            </div>
-          </section> */}
-          <p className="text-sm text-primary font-medium text-center mb-32 px-2">⏰ O horário será definido pelo estabelecimento.</p>
+          <p className="text-sm text-primary font-medium text-center mb-32 px-4 py-8 bg-blue-50/50 rounded-2xl border border-blue-100/50">
+            ⏰ Após solicitar, o Alessandro entrará em contato para definir o melhor dia e horário com você.
+          </p>
         </section>
       </main>
 
-      {isServiceConfirmed && selectedPetId && selectedDate && (
+      {isServiceConfirmed && selectedPetId && (
         <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white dark:bg-gray-900 border-t border-gray-200 p-4 pb-6 shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.1)] z-30 animate-in slide-in-from-bottom duration-300">
           <div className="flex items-center justify-between mb-4 px-1">
             <div className="flex flex-col">
-              <span className="text-[10px] text-gray-500 font-medium uppercase tracking-wide">Total a pagar</span>
+              <span className="text-[10px] text-gray-500 font-medium uppercase tracking-wide">Total estimado</span>
               <span className="text-xl font-bold">R$ {calculateTotal().toFixed(2)}</span>
             </div>
             <div className="text-right">
-              <span className="text-[10px] text-gray-500 block">Agendado para</span>
-              <span className="text-xs font-semibold text-primary">{selectedDate}</span>
+              <span className="text-[10px] text-gray-500 block">Agendamento</span>
+              <span className="text-xs font-semibold text-primary">A definir</span>
             </div>
           </div>
           <button
@@ -353,8 +293,8 @@ const BookingScreen: React.FC<BookingProps> = ({ service: initialService, onBack
             disabled={saving || pets.length === 0}
             className="w-full bg-primary hover:bg-primary-dark text-white font-bold text-lg py-4 rounded-xl shadow-lg shadow-primary/30 flex items-center justify-center gap-2 transition-transform active:scale-[0.98] disabled:opacity-70"
           >
-            {saving ? 'Criando...' : 'Confirmar Agendamento'}
-            <span className="material-symbols-outlined">arrow_forward</span>
+            {saving ? 'Solicitando...' : 'Solicitar Agendamento'}
+            <span className="material-symbols-outlined">send</span>
           </button>
         </div>
       )}

@@ -3,6 +3,7 @@ import { Screen } from '../types';
 import AdminBottomNav from './AdminBottomNav';
 import { getAllAppointments, updateAppointmentStatus, deleteAppointment, AppointmentWithDetails } from '../lib/database';
 import AdminBookingModal from './AdminBookingModal';
+import AdminEditBookingModal from './AdminEditBookingModal';
 import AdminCalendarView from './AdminCalendarView';
 
 interface AdminAgendaProps {
@@ -17,6 +18,8 @@ const AdminAgendaScreen: React.FC<AdminAgendaProps> = ({ onNavigate }) => {
   const [selectedTime, setSelectedTime] = useState('09:00');
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [showCalendarView, setShowCalendarView] = useState(false);
+  const [selectedAppointmentForEdit, setSelectedAppointmentForEdit] = useState<AppointmentWithDetails | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [calendarAppointments, setCalendarAppointments] = useState<AppointmentWithDetails[]>([]);
   const [openedFromCalendar, setOpenedFromCalendar] = useState(false);
   const [allToDefineCount, setAllToDefineCount] = useState(0);
@@ -35,7 +38,7 @@ const AdminAgendaScreen: React.FC<AdminAgendaProps> = ({ onNavigate }) => {
       ]);
       setAppointments(dateData);
       // Count all 'a definir' appointments across all dates
-      const toDefine = allData.filter(a => !a.scheduled_time && a.status !== 'CANCELED' && a.status !== 'COMPLETED');
+      const toDefine = allData.filter(a => (!a.scheduled_time || !a.scheduled_date) && a.status !== 'CANCELED' && a.status !== 'COMPLETED');
       setAllToDefineCount(toDefine.length);
     } catch (err) {
       console.error('Error loading appointments:', err);
@@ -85,8 +88,8 @@ const AdminAgendaScreen: React.FC<AdminAgendaProps> = ({ onNavigate }) => {
   };
 
   const handleEdit = (appointment: AppointmentWithDetails) => {
-    // Navigate to booking with appointment data for editing
-    onNavigate('BOOKING' as Screen, appointment);
+    setSelectedAppointmentForEdit(appointment);
+    setIsEditModalOpen(true);
   };
 
   const filteredAppointments = appointments.filter(app => {
@@ -274,7 +277,7 @@ const AdminAgendaScreen: React.FC<AdminAgendaProps> = ({ onNavigate }) => {
                       </div>
                       <div className="flex items-center gap-1 text-xs text-slate-500 mt-1">
                         <span>
-                          Cliente: {app.profile?.full_name || 'Não informado'}
+                          Cliente: {app.profile?.nickname || app.profile?.full_name || 'Não informado'}
                           {app.profile?.neighborhood && <span className="text-primary font-medium ml-1">({app.profile.neighborhood})</span>}
                         </span>
                         {app.profile?.phone && (
@@ -379,6 +382,17 @@ const AdminAgendaScreen: React.FC<AdminAgendaProps> = ({ onNavigate }) => {
       </button>
 
       {/* New Appointment Modal */}
+      {/* Edit Appointment Modal */}
+      <AdminEditBookingModal
+        isOpen={isEditModalOpen}
+        onClose={() => {
+          setIsEditModalOpen(false);
+          setSelectedAppointmentForEdit(null);
+        }}
+        onSuccess={loadAppointments}
+        appointment={selectedAppointmentForEdit}
+      />
+
       <AdminBookingModal
         isOpen={showBookingModal}
         initialDate={selectedDate}

@@ -115,7 +115,7 @@ const AdminEditBookingModal: React.FC<AdminEditBookingModalProps> = ({
                 <div className="p-6 bg-primary text-white flex justify-between items-center sticky top-0 z-10">
                     <div className="flex flex-col">
                         <h2 className="text-xl font-bold">Editar Agendamento</h2>
-                        <span className="text-xs opacity-80">{appointment.pet?.name} • {appointment.profile?.full_name}</span>
+                        <span className="text-xs opacity-80">{appointment.pet?.name} • {appointment.profile?.nickname || appointment.profile?.full_name}</span>
                     </div>
                     <button onClick={onClose} className="p-1 hover:bg-white/20 rounded-full transition-colors">
                         <span className="material-symbols-outlined">close</span>
@@ -143,7 +143,7 @@ const AdminEditBookingModal: React.FC<AdminEditBookingModalProps> = ({
                                     <p className="text-sm text-gray-500">{appointment.pet?.breed || 'Raça não informada'}</p>
                                     <div className="flex items-center gap-2 mt-1">
                                         <span className="material-symbols-outlined text-xs text-primary">person</span>
-                                        <span className="text-xs font-medium">{appointment.profile?.full_name}</span>
+                                        <span className="text-xs font-medium">{appointment.profile?.nickname || appointment.profile?.full_name}</span>
                                     </div>
                                 </div>
                                 <button

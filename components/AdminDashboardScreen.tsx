@@ -204,20 +204,21 @@ const AdminDashboardScreen: React.FC<AdminDashboardProps> = ({ onNavigate }) => 
                   if (!searchTerm) return true;
                   const term = searchTerm.toLowerCase();
 
-                  const dateObj = new Date(app.scheduled_date + 'T00:00:00');
-                  const dateDirect = app.scheduled_date; // yyyy-mm-dd
-                  const dateBr = dateObj.toLocaleDateString('pt-BR'); // dd/mm/yyyy
-                  const weekday = dateObj.toLocaleDateString('pt-BR', { weekday: 'long' });
+                  const dateObj = app.scheduled_date ? new Date(app.scheduled_date + 'T00:00:00') : null;
+                  const dateDirect = app.scheduled_date || '';
+                  const dateBr = dateObj ? dateObj.toLocaleDateString('pt-BR') : '';
+                  const weekday = dateObj ? dateObj.toLocaleDateString('pt-BR', { weekday: 'long' }) : '';
 
                   return (
                     app.pet?.name?.toLowerCase().includes(term) ||
                     app.profile?.full_name?.toLowerCase().includes(term) ||
+                    app.profile?.nickname?.toLowerCase().includes(term) ||
                     app.profile?.address?.toLowerCase().includes(term) ||
                     app.profile?.neighborhood?.toLowerCase().includes(term) ||
                     app.service?.name?.toLowerCase().includes(term) ||
-                    dateBr.includes(term) ||
-                    dateDirect.includes(term) ||
-                    weekday.toLowerCase().includes(term)
+                    (dateBr && dateBr.includes(term)) ||
+                    (dateDirect && dateDirect.includes(term)) ||
+                    (weekday && weekday.toLowerCase().includes(term))
                   );
                 });
 
@@ -258,7 +259,7 @@ const AdminDashboardScreen: React.FC<AdminDashboardProps> = ({ onNavigate }) => 
                         </span>
                       </div>
                       <p className="line-clamp-1 text-xs text-gray-500">
-                        {app.service?.name} • {app.profile?.full_name || 'Cliente'} • <span className="capitalize">{new Date(app.scheduled_date + 'T00:00:00').toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' })}</span>
+                        {app.service?.name} • {app.profile?.nickname || app.profile?.full_name || 'Cliente'} • <span className="capitalize">{app.scheduled_date ? new Date(app.scheduled_date + 'T00:00:00').toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' }) : 'A definir'}</span>
                       </p>
                     </div>
                     <button
@@ -330,7 +331,7 @@ const AdminDashboardScreen: React.FC<AdminDashboardProps> = ({ onNavigate }) => 
                 <div>
                   <h4 className="text-sm font-bold text-gray-900 dark:text-gray-100">Data e Hora</h4>
                   <p className="text-gray-600 dark:text-gray-400 text-sm capitalize">
-                    {new Date(selectedAppointment.scheduled_date + 'T00:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
+                    {selectedAppointment.scheduled_date ? new Date(selectedAppointment.scheduled_date + 'T00:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' }) : 'Data a definir'}
                   </p>
                   <p className="text-gray-600 dark:text-gray-400 text-sm mt-0.5">
                     às {selectedAppointment.scheduled_time ? selectedAppointment.scheduled_time.substring(0, 5) : 'A definir'}
@@ -370,7 +371,7 @@ const AdminDashboardScreen: React.FC<AdminDashboardProps> = ({ onNavigate }) => 
                       </button>
                     )}
                   </div>
-                  <p className="text-gray-600 dark:text-gray-400 text-sm">{selectedAppointment.profile?.full_name || 'Desconhecido'}</p>
+                  <p className="text-gray-600 dark:text-gray-400 text-sm">{selectedAppointment.profile?.nickname || selectedAppointment.profile?.full_name || 'Desconhecido'}</p>
                   <div className="mt-1.5 flex items-start gap-1.5 p-2 rounded-lg bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-800">
                     <span className="material-symbols-outlined text-gray-400 text-sm mt-0.5">location_on</span>
                     <div className="flex-1">

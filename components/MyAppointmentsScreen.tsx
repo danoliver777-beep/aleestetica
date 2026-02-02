@@ -56,13 +56,14 @@ const MyAppointmentsScreen: React.FC<MyAppointmentsProps> = ({ onNavigate }) => 
   const today = new Date().toISOString().split('T')[0];
   const filteredAppointments = appointments.filter(app => {
     if (filter === 'future') {
-      return app.scheduled_date >= today;
+      return !app.scheduled_date || app.scheduled_date >= today;
     } else {
-      return app.scheduled_date < today;
+      return app.scheduled_date && app.scheduled_date < today;
     }
   });
 
-  const formatDate = (dateStr: string) => {
+  const formatDate = (dateStr: string | null) => {
+    if (!dateStr) return 'A definir';
     const date = new Date(dateStr + 'T00:00:00');
     return date.toLocaleDateString('pt-BR', { weekday: 'short', day: 'numeric', month: 'short' });
   };

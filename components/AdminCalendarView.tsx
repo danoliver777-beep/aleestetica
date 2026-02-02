@@ -350,13 +350,13 @@ const AdminCalendarView: React.FC<AdminCalendarViewProps> = ({
                                                         {app.pet?.name || 'Pet'}
                                                     </p>
                                                     <p className="text-[9px] text-orange-600 dark:text-orange-400 truncate leading-tight">
-                                                        {app.profile?.full_name?.split(' ')[0]}
+                                                        {app.profile?.nickname || app.profile?.full_name?.split(' ')[0]}
                                                     </p>
                                                 </div>
                                             </div>
                                             <div className="mt-1 flex items-center justify-between">
                                                 <span className="text-[9px] text-orange-500">
-                                                    {new Date(app.scheduled_date + 'T00:00:00').toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit' })}
+                                                    {app.scheduled_date ? new Date(app.scheduled_date + 'T00:00:00').toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit' }) : 'A definir'}
                                                 </span>
                                                 <span className="text-[10px] font-bold text-orange-600 flex items-center gap-0.5 animate-pulse">
                                                     <span className="material-symbols-outlined text-[10px]">schedule</span>
@@ -430,14 +430,14 @@ const AdminCalendarView: React.FC<AdminCalendarViewProps> = ({
                                                     {app.pet?.name || 'Pet'}
                                                 </p>
                                                 <p className="text-[9px] text-gray-500 dark:text-gray-400 truncate leading-tight">
-                                                    {app.profile?.full_name?.split(' ')[0]}
+                                                    {app.profile?.nickname || app.profile?.full_name?.split(' ')[0]}
                                                     {app.profile?.neighborhood && <span className="text-primary ml-0.5">({app.profile.neighborhood})</span>}
                                                 </p>
                                             </div>
                                         </div>
                                         <div className="mt-1 flex items-center justify-between">
                                             <span className="text-[9px] text-gray-400">
-                                                {new Date(app.scheduled_date + 'T00:00:00').toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit' })}
+                                                {app.scheduled_date ? new Date(app.scheduled_date + 'T00:00:00').toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit' }) : 'A definir'}
                                             </span>
                                             <span className="text-[10px] font-bold text-primary">
                                                 {app.scheduled_time ? app.scheduled_time.substring(0, 5) : 'A definir'}
