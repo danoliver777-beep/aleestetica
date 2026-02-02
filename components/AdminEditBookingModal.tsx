@@ -141,9 +141,18 @@ const AdminEditBookingModal: React.FC<AdminEditBookingModalProps> = ({
                                 <div className="flex-1">
                                     <h3 className="font-bold text-lg leading-tight">{appointment.pet?.name}</h3>
                                     <p className="text-sm text-gray-500">{appointment.pet?.breed || 'Raça não informada'}</p>
-                                    <div className="flex items-center gap-2 mt-1">
-                                        <span className="material-symbols-outlined text-xs text-primary">person</span>
-                                        <span className="text-xs font-medium">{appointment.profile?.nickname || appointment.profile?.full_name}</span>
+                                    <div className="mt-2 space-y-1">
+                                        <div className="flex items-center gap-2">
+                                            <span className="material-symbols-outlined text-[16px] text-primary">person</span>
+                                            <span className="text-xs font-semibold">{appointment.profile?.full_name} {appointment.profile?.nickname ? `(${appointment.profile?.nickname})` : ''}</span>
+                                        </div>
+                                        <div className="flex items-start gap-2">
+                                            <span className="material-symbols-outlined text-[16px] text-primary mt-0.5">location_on</span>
+                                            <span className="text-xs text-gray-600 dark:text-gray-400">
+                                                {appointment.profile?.address || 'Endereço não informado'}
+                                                {appointment.profile?.neighborhood ? ` - ${appointment.profile?.neighborhood}` : ''}
+                                            </span>
+                                        </div>
                                     </div>
                                 </div>
                                 <button
