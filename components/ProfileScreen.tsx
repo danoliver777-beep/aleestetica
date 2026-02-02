@@ -17,6 +17,7 @@ const ProfileScreen: React.FC<ProfileProps> = ({ onNavigate }) => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [fullName, setFullName] = useState('');
+  const [nickname, setNickname] = useState('');
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
   const [neighborhood, setNeighborhood] = useState('');
@@ -41,6 +42,7 @@ const ProfileScreen: React.FC<ProfileProps> = ({ onNavigate }) => {
       if (profileData) {
         setProfile(profileData);
         setFullName(profileData.full_name || '');
+        setNickname(profileData.nickname || '');
         setPhone(profileData.phone || '');
         setAddress(profileData.address || '');
         setNeighborhood(profileData.neighborhood || '');
@@ -64,6 +66,7 @@ const ProfileScreen: React.FC<ProfileProps> = ({ onNavigate }) => {
       await upsertProfile({
         id: user.id,
         full_name: fullName,
+        nickname: nickname,
         phone: phone,
         address: address,
         neighborhood: neighborhood,
@@ -231,6 +234,15 @@ const ProfileScreen: React.FC<ProfileProps> = ({ onNavigate }) => {
             Informações Pessoais
           </h3>
           <div className="space-y-4">
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-gray-500 ml-1">Como quer ser chamado? (Apelido)</label>
+              <input
+                className="w-full bg-white dark:bg-surface-dark border border-gray-200 rounded-xl h-12 px-4 focus:ring-1 focus:ring-primary outline-none"
+                value={nickname}
+                onChange={(e) => setNickname(e.target.value)}
+                placeholder="Seu apelido"
+              />
+            </div>
             <div className="space-y-1">
               <label className="text-xs font-semibold text-gray-500 ml-1">Nome Completo</label>
               <input

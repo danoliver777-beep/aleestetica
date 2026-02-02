@@ -12,6 +12,7 @@ export interface Profile {
     created_at: string;
     address?: string | null;
     neighborhood?: string | null;
+    nickname?: string | null;
 }
 
 export const getProfile = async (userId: string): Promise<Profile | null> => {

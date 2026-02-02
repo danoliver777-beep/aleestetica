@@ -5,6 +5,7 @@ import { supabase } from '../supabaseClient';
 const LoginScreen: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [nickname, setNickname] = useState('');
   const [loading, setLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -19,11 +20,21 @@ const LoginScreen: React.FC = () => {
 
     try {
       if (isSignUp) {
-        const { error } = await supabase.auth.signUp({
+        const { data: authData, error } = await supabase.auth.signUp({
           email,
           password,
         });
         if (error) throw error;
+
+        // Create profile with nickname if provided
+        if (authData.user) {
+          await supabase.from('profiles').upsert({
+            id: authData.user.id,
+            nickname: nickname || email.split('@')[0],
+            full_name: email.split('@')[0],
+          });
+        }
+
         setMessage('Cadastro realizado! Verifique seu e-mail (se confirmação for exigida) ou faça login.');
         setIsSignUp(false);
       } else {
@@ -124,6 +135,22 @@ const LoginScreen: React.FC = () => {
               </button>
             </div>
           </div>
+
+          {isSignUp && (
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 ml-1">Como quer ser chamado? (Apelido)</label>
+              <div className="relative flex items-center">
+                <span className="material-symbols-outlined absolute left-4 text-gray-400 text-[20px]">person</span>
+                <input
+                  className="w-full h-14 pl-12 pr-4 rounded-xl bg-white dark:bg-surface-dark border-transparent focus:border-primary focus:ring-2 focus:ring-primary/20 text-gray-900 dark:text-white placeholder:text-gray-400 font-medium transition-all shadow-sm outline-none"
+                  placeholder="Ex: Dani, Gui, etc."
+                  required={isSignUp}
+                  value={nickname}
+                  onChange={(e) => setNickname(e.target.value)}
+                />
+              </div>
+            </div>
+          )}
 
           <button
             disabled={loading}
