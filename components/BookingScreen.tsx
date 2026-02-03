@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { getPets, getServices, createAppointment, checkTimeConflict, Pet, Service } from '../lib/database';
+import { getPets, getServices, createAppointment, checkTimeConflict, Pet, Service, getAdminSetting, BusinessInfo } from '../lib/database';
 
 interface BookingProps {
   service?: { id: string; name: string; description: string; price: number; duration: string; image_url: string; rating: number } | null;
@@ -20,6 +20,10 @@ const BookingScreen: React.FC<BookingProps> = ({ service: initialService, onBack
   const [isServiceConfirmed, setIsServiceConfirmed] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [businessInfo, setBusinessInfo] = useState<BusinessInfo>({
+    whatsapp: '5511999999999',
+    email: 'suporte@alessandropet.com'
+  });
 
 
   // Horários de funcionamento: 07:00-12:00 e 13:00-19:00 (intervalo de almoço 12-13)
@@ -42,12 +46,14 @@ const BookingScreen: React.FC<BookingProps> = ({ service: initialService, onBack
     if (!user) return;
     setLoading(true);
     try {
-      const [petsData, servicesData] = await Promise.all([
+      const [petsData, servicesData, businessData] = await Promise.all([
         getPets(user.id),
-        getServices()
+        getServices(),
+        getAdminSetting<BusinessInfo>('business_info')
       ]);
       setPets(petsData);
       setServices(servicesData);
+      if (businessData) setBusinessInfo(businessData);
       if (petsData.length > 0) setSelectedPetId(petsData[0].id);
       if (selectedServices.length === 0 && servicesData.length > 0) {
         setSelectedServices([{ serviceId: servicesData[0].id, name: servicesData[0].name, price: servicesData[0].price, subtypeName: null }]);
@@ -88,7 +94,7 @@ const BookingScreen: React.FC<BookingProps> = ({ service: initialService, onBack
       // Notificar administrador via WhatsApp
       const selectedPet = pets.find(p => p.id === selectedPetId);
       const petName = selectedPet?.name || 'Pet';
-      const whatsappNumber = '5511999999999'; // Administrador: Alessandro
+      const whatsappNumber = businessInfo.whatsapp; // Dinâmico: Alessandro
       const message = `Olá Alessandro! Acabei de solicitar um agendamento para o pet *${petName}*.\n\n*Serviços:*\n${noteContent.replace('Serviços Selecionados:\n', '')}\nPor favor, me confirme o melhor dia e horário!`;
       const encodedMessage = encodeURIComponent(message);
       window.open(`https://wa.me/${whatsappNumber}?text=${encodedMessage}`, '_blank');

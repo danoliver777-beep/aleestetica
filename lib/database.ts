@@ -683,6 +683,11 @@ export interface AdminSetting {
     updated_at: string;
 }
 
+export interface BusinessInfo {
+    whatsapp: string;
+    email: string;
+}
+
 export const getAdminSetting = async <T>(category: string): Promise<T | null> => {
     const { data, error } = await supabase
         .from('admin_settings')

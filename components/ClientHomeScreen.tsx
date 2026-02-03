@@ -4,7 +4,7 @@ import { Screen } from '../types';
 import BottomNav from './BottomNav';
 import Header from './Header';
 import { useAuth } from '../context/AuthContext';
-import { getPets, getServices, getProfile, getAppointments, getNotifications, markNotificationRead, Pet, Service, Profile, Notification as DBNotification } from '../lib/database';
+import { getPets, getServices, getProfile, getAppointments, getNotifications, markNotificationRead, getAdminSetting, Pet, Service, Profile, Notification as DBNotification, BusinessInfo } from '../lib/database';
 
 interface Notification {
   id: string;
@@ -29,6 +29,10 @@ const ClientHomeScreen: React.FC<ClientHomeProps> = ({ onNavigate, onSelectServi
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [expandedDescriptions, setExpandedDescriptions] = useState<Set<string>>(new Set());
+  const [businessInfo, setBusinessInfo] = useState<BusinessInfo>({
+    whatsapp: '5511999999999',
+    email: 'suporte@alessandropet.com'
+  });
 
   useEffect(() => {
     if (user) loadData();
@@ -39,17 +43,19 @@ const ClientHomeScreen: React.FC<ClientHomeProps> = ({ onNavigate, onSelectServi
     setLoading(true);
     try {
       const todayStr = new Date().toISOString().split('T')[0];
-      const [profileData, petsData, servicesData, appointmentsData, dbNotificationsData] = await Promise.all([
+      const [profileData, petsData, servicesData, appointmentsData, dbNotificationsData, businessData] = await Promise.all([
         getProfile(user.id),
         getPets(user.id),
         getServices(),
         // Only fetch recent appointments for the home screen notifications/display
         getAppointments(user.id), // We should probably add a limit/date filter here too if database.ts supported it for user view
-        getNotifications(user.id)
+        getNotifications(user.id),
+        getAdminSetting<BusinessInfo>('business_info')
       ]);
       setProfile(profileData);
       setPets(petsData);
       setServices(servicesData);
+      if (businessData) setBusinessInfo(businessData);
 
       // Generate notifications from appointments
       const generatedNotifications: Notification[] = [];
@@ -321,7 +327,7 @@ const ClientHomeScreen: React.FC<ClientHomeProps> = ({ onNavigate, onSelectServi
 
       {/* WhatsApp FAB */}
       <a
-        href="https://wa.me/557998938044"
+        href={`https://wa.me/${businessInfo.whatsapp}`}
         target="_blank"
         rel="noopener noreferrer"
         className="fixed bottom-24 right-4 z-40 flex items-center justify-center w-14 h-14 bg-[#25D366] text-white rounded-full shadow-lg hover:bg-[#20bd5a] transition-all hover:scale-105 active:scale-95 animate-in zoom-in duration-300"

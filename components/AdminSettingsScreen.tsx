@@ -17,7 +17,8 @@ import {
     uploadAvatar,
     uploadPetImage,
     Profile,
-    Pet
+    Pet,
+    BusinessInfo
 } from '../lib/database';
 
 // Reusable Toggle Switch Component
@@ -41,7 +42,7 @@ interface AdminSettingsProps {
     onNavigate: (s: Screen) => void;
 }
 
-type ModalType = 'notifications' | 'hours' | 'payments' | 'help' | 'terms' | 'clients' | null;
+type ModalType = 'notifications' | 'hours' | 'payments' | 'business' | 'help' | 'terms' | 'clients' | null;
 
 interface DailyHours {
     open: string;
@@ -88,6 +89,11 @@ const AdminSettingsScreen: React.FC<AdminSettingsProps> = ({ onNavigate }) => {
         debito: true,
     });
 
+    const [businessInfo, setBusinessInfo] = useState<BusinessInfo>({
+        whatsapp: '5511999999999',
+        email: 'suporte@alessandropet.com'
+    });
+
     const [broadcastTitle, setBroadcastTitle] = useState('');
     const [broadcastMessage, setBroadcastMessage] = useState('');
     const [sendingBroadcast, setSendingBroadcast] = useState(false);
@@ -110,7 +116,7 @@ const AdminSettingsScreen: React.FC<AdminSettingsProps> = ({ onNavigate }) => {
         const fetchSettings = async () => {
             try {
                 setLoading(true);
-                const [notif, hours, payment] = await Promise.all([
+                const [notif, hours, payment, business] = await Promise.all([
                     getAdminSetting<{
                         enabled: boolean;
                         newApp: boolean;
@@ -118,7 +124,8 @@ const AdminSettingsScreen: React.FC<AdminSettingsProps> = ({ onNavigate }) => {
                         reminder: boolean;
                     }>('notifications'),
                     getAdminSetting<typeof businessHours>('business_hours'),
-                    getAdminSetting<typeof paymentMethods>('payment_methods')
+                    getAdminSetting<typeof paymentMethods>('payment_methods'),
+                    getAdminSetting<BusinessInfo>('business_info')
                 ]);
 
                 if (notif) {
@@ -129,6 +136,7 @@ const AdminSettingsScreen: React.FC<AdminSettingsProps> = ({ onNavigate }) => {
                 }
                 if (hours) setBusinessHours(hours);
                 if (payment) setPaymentMethods(payment);
+                if (business) setBusinessInfo(business);
             } catch (error) {
                 console.error('Error fetching admin settings:', error);
             } finally {
@@ -180,6 +188,19 @@ const AdminSettingsScreen: React.FC<AdminSettingsProps> = ({ onNavigate }) => {
         } catch (error) {
             console.error('Error saving payments:', error);
             alert('Erro ao salvar formas de pagamento');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const saveBusinessInfo = async () => {
+        try {
+            setLoading(true);
+            await upsertAdminSetting('business_info', businessInfo);
+            closeModal();
+        } catch (error) {
+            console.error('Error saving business info:', error);
+            alert('Erro ao salvar informações do estabelecimento');
         } finally {
             setLoading(false);
         }
@@ -444,6 +465,16 @@ const AdminSettingsScreen: React.FC<AdminSettingsProps> = ({ onNavigate }) => {
                                 <span className="material-symbols-outlined text-gray-400">chevron_right</span>
                             </button>
                             <button
+                                onClick={() => setActiveModal('business')}
+                                className="w-full flex items-center justify-between p-4 hover:bg-gray-50 rounded-xl transition-colors"
+                            >
+                                <div className="flex items-center gap-3">
+                                    <span className="material-symbols-outlined text-gray-400">store</span>
+                                    <span className="font-medium">Informações do Estabelecimento</span>
+                                </div>
+                                <span className="material-symbols-outlined text-gray-400">chevron_right</span>
+                            </button>
+                            <button
                                 onClick={openClientsModal}
                                 className="w-full flex items-center justify-between p-4 hover:bg-gray-50 rounded-xl transition-colors"
                             >
@@ -693,6 +724,48 @@ const AdminSettingsScreen: React.FC<AdminSettingsProps> = ({ onNavigate }) => {
                             </>
                         )}
 
+                        {/* Business Info Modal */}
+                        {activeModal === 'business' && (
+                            <>
+                                <div className="flex items-center justify-between mb-6">
+                                    <h2 className="text-xl font-bold">Informações do Estabelecimento</h2>
+                                    <button onClick={closeModal} className="p-2 hover:bg-gray-100 rounded-full">
+                                        <span className="material-symbols-outlined">close</span>
+                                    </button>
+                                </div>
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="text-xs font-bold text-gray-500 uppercase ml-1">WhatsApp de Atendimento</label>
+                                        <input
+                                            type="tel"
+                                            value={businessInfo.whatsapp}
+                                            onChange={(e) => setBusinessInfo(prev => ({ ...prev, whatsapp: e.target.value }))}
+                                            placeholder="Ex: 5511999999999"
+                                            className="w-full mt-1 p-3 bg-gray-50 border border-gray-100 rounded-xl focus:ring-2 focus:ring-primary text-sm"
+                                        />
+                                        <p className="text-[10px] text-gray-400 mt-1 ml-1">* Use o formato com DDD e sem espaços (ex: 5511940028922)</p>
+                                    </div>
+                                    <div>
+                                        <label className="text-xs font-bold text-gray-500 uppercase ml-1">E-mail de Suporte</label>
+                                        <input
+                                            type="email"
+                                            value={businessInfo.email}
+                                            onChange={(e) => setBusinessInfo(prev => ({ ...prev, email: e.target.value }))}
+                                            placeholder="suporte@exemplo.com"
+                                            className="w-full mt-1 p-3 bg-gray-50 border border-gray-100 rounded-xl focus:ring-2 focus:ring-primary text-sm"
+                                        />
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={saveBusinessInfo}
+                                    disabled={loading}
+                                    className="w-full mt-6 py-4 bg-primary text-white font-bold rounded-xl disabled:opacity-50"
+                                >
+                                    {loading ? 'Salvando...' : 'Salvar Alterações'}
+                                </button>
+                            </>
+                        )}
+
                         {/* Help & Support Modal */}
                         {activeModal === 'help' && (
                             <>
@@ -705,8 +778,8 @@ const AdminSettingsScreen: React.FC<AdminSettingsProps> = ({ onNavigate }) => {
                                 <div className="space-y-4">
                                     <div className="p-4 bg-blue-50 rounded-xl">
                                         <h3 className="font-bold text-blue-700 mb-2">📞 Contato</h3>
-                                        <a href="tel:+5511999999999" className="block text-sm text-blue-600 hover:underline">WhatsApp: (11) 99999-9999</a>
-                                        <a href="mailto:suporte@alessandropet.com" className="block text-sm text-blue-600 hover:underline">E-mail: suporte@alessandropet.com</a>
+                                        <a href={`tel:${businessInfo.whatsapp}`} className="block text-sm text-blue-600 hover:underline">WhatsApp: {businessInfo.whatsapp}</a>
+                                        <a href={`mailto:${businessInfo.email}`} className="block text-sm text-blue-600 hover:underline">E-mail: {businessInfo.email}</a>
                                     </div>
                                     <div className="p-4 bg-gray-50 rounded-xl">
                                         <h3 className="font-bold mb-2">❓ Perguntas Frequentes</h3>
@@ -726,7 +799,7 @@ const AdminSettingsScreen: React.FC<AdminSettingsProps> = ({ onNavigate }) => {
                                         </div>
                                     </div>
                                     <a
-                                        href="https://wa.me/5511999999999"
+                                        href={`https://wa.me/${businessInfo.whatsapp}`}
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className="w-full flex items-center justify-center gap-2 py-4 bg-green-500 text-white font-bold rounded-xl"
