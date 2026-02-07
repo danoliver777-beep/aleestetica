@@ -167,67 +167,6 @@ const ProfileScreen: React.FC<ProfileProps> = ({ onNavigate }) => {
           </div>
         </div>
 
-        <section className="mt-8 px-4">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-bold flex items-center gap-2">
-              <span className="material-symbols-outlined text-primary filled">pets</span>
-              Meus Pets ({pets.length})
-            </h3>
-            <button
-              onClick={() => onNavigate('PET_REGISTRATION')}
-              className="text-primary text-xs font-semibold flex items-center gap-1 bg-blue-50 px-3 py-1.5 rounded-full"
-            >
-              <span className="material-symbols-outlined text-[18px]">add</span> Adicionar
-            </button>
-          </div>
-
-          {pets.length === 0 ? (
-            <div className="text-center py-8 text-gray-400">
-              <span className="material-symbols-outlined text-5xl mb-2">pets</span>
-              <p className="text-sm">Nenhum pet cadastrado ainda</p>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-3">
-              {pets.map(pet => (
-                <div key={pet.id} className="bg-white dark:bg-surface-dark border border-gray-100 rounded-2xl p-3 shadow-sm flex items-center gap-4">
-                  <div className="size-16 rounded-xl overflow-hidden bg-gray-100">
-                    {pet.image_url ? (
-                      <div className="w-full h-full bg-cover bg-center" style={{ backgroundImage: `url("${pet.image_url}")` }}></div>
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <span className="material-symbols-outlined text-gray-300 text-3xl">pets</span>
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex justify-between items-start">
-                      <h4 className="font-bold truncate text-base">{pet.name}</h4>
-                    </div>
-                    <p className="text-xs text-gray-500">{pet.breed} {pet.age ? `• ${pet.age}` : ''}</p>
-                    {neighborhood && <p className="text-[10px] text-primary">{neighborhood}</p>}
-                  </div>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => onNavigate('PET_REGISTRATION', pet)}
-                      className="p-2 rounded-full bg-blue-50 text-primary hover:bg-blue-100 transition-colors"
-                      title="Editar pet"
-                    >
-                      <span className="material-symbols-outlined text-lg">edit</span>
-                    </button>
-                    <button
-                      onClick={() => handleDeletePet(pet.id, pet.name)}
-                      className="p-2 rounded-full bg-red-50 text-red-500 hover:bg-red-100 transition-colors"
-                      title="Excluir pet"
-                    >
-                      <span className="material-symbols-outlined text-lg">delete</span>
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
-
         <section className="mt-8 px-4 space-y-5">
           <h3 className="text-lg font-bold flex items-center gap-2">
             <span className="material-symbols-outlined text-primary filled">person</span>
@@ -287,6 +226,67 @@ const ProfileScreen: React.FC<ProfileProps> = ({ onNavigate }) => {
               />
             </div>
           </div>
+        </section>
+
+        <section className="mt-8 px-4">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-bold flex items-center gap-2">
+              <span className="material-symbols-outlined text-primary filled">pets</span>
+              Meus Pets ({pets.length})
+            </h3>
+            <button
+              onClick={() => onNavigate('PET_REGISTRATION')}
+              className="text-primary text-xs font-semibold flex items-center gap-1 bg-blue-50 px-3 py-1.5 rounded-full"
+            >
+              <span className="material-symbols-outlined text-[18px]">add</span> Adicionar
+            </button>
+          </div>
+
+          {pets.length === 0 ? (
+            <div className="text-center py-8 text-gray-400">
+              <span className="material-symbols-outlined text-5xl mb-2">pets</span>
+              <p className="text-sm">Nenhum pet cadastrado ainda</p>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-3">
+              {pets.map(pet => (
+                <div key={pet.id} className="bg-white dark:bg-surface-dark border border-gray-100 rounded-2xl p-3 shadow-sm flex items-center gap-4">
+                  <div className="size-16 rounded-xl overflow-hidden bg-gray-100">
+                    {pet.image_url ? (
+                      <div className="w-full h-full bg-cover bg-center" style={{ backgroundImage: `url("${pet.image_url}")` }}></div>
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <span className="material-symbols-outlined text-gray-300 text-3xl">pets</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex justify-between items-start">
+                      <h4 className="font-bold truncate text-base">{pet.name}</h4>
+                    </div>
+                    <p className="text-xs text-gray-500">{pet.breed} {pet.age ? `• ${pet.age}` : ''}</p>
+                    {neighborhood && <p className="text-[10px] text-primary">{neighborhood}</p>}
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => onNavigate('PET_REGISTRATION', pet)}
+                      className="p-2 rounded-full bg-blue-50 text-primary hover:bg-blue-100 transition-colors"
+                      title="Editar pet"
+                    >
+                      <span className="material-symbols-outlined text-lg">edit</span>
+                    </button>
+                    <button
+                      onClick={() => handleDeletePet(pet.id, pet.name)}
+                      className="p-2 rounded-full bg-red-50 text-red-500 hover:bg-red-100 transition-colors"
+                      title="Excluir pet"
+                    >
+                      <span className="material-symbols-outlined text-lg">delete</span>
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </section>
 
         <div className="mt-8 px-4 flex flex-col gap-4">
