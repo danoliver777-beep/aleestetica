@@ -5,6 +5,11 @@ import { supabase } from '../supabaseClient';
 const LoginScreen: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [nickname, setNickname] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
   const [address, setAddress] = useState('');
   const [neighborhood, setNeighborhood] = useState('');
   const [petName, setPetName] = useState('');
