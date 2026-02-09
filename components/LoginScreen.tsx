@@ -16,6 +16,7 @@ const LoginScreen: React.FC = () => {
   const [petName, setPetName] = useState('');
   const [petType, setPetType] = useState<'dog' | 'cat' | 'other'>('dog');
   const [petBreed, setPetBreed] = useState('');
+  const [phone, setPhone] = useState('');
   const [regStep, setRegStep] = useState<'AUTH' | 'ADDRESS' | 'PET'>('AUTH');
   const [showPassword, setShowPassword] = useState(false);
   const { user, profile, pets, registrationComplete, role, refreshAuthData } = useAuth();
@@ -24,7 +25,7 @@ const LoginScreen: React.FC = () => {
   useEffect(() => {
     if (user && role === UserRole.CLIENT && !registrationComplete) {
       setIsSignUp(true);
-      if (!profile?.address) {
+      if (!profile?.address || !profile?.phone) {
         setRegStep('ADDRESS');
       } else if (pets.length === 0) {
         setRegStep('PET');
@@ -62,7 +63,8 @@ const LoginScreen: React.FC = () => {
 
           const { error } = await supabase.from('profiles').update({
             address,
-            neighborhood
+            neighborhood,
+            phone
           }).eq('id', user.id);
 
           if (error) throw error;
@@ -247,6 +249,20 @@ const LoginScreen: React.FC = () => {
                     required
                     value={neighborhood}
                     onChange={(e) => setNeighborhood(e.target.value)}
+                  />
+                </div>
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 ml-1">WhatsApp / Telefone</label>
+                <div className="relative flex items-center">
+                  <span className="material-symbols-outlined absolute left-4 text-gray-400 text-[20px]">phone</span>
+                  <input
+                    className="w-full h-14 pl-12 pr-4 rounded-xl bg-white dark:bg-surface-dark border-transparent focus:border-primary focus:ring-2 focus:ring-primary/20 text-gray-900 dark:text-white placeholder:text-gray-400 font-medium transition-all shadow-sm outline-none"
+                    placeholder="Ex: (11) 98765-4321"
+                    type="tel"
+                    required
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
                   />
                 </div>
               </div>

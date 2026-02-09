@@ -64,8 +64,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             const userRole = (profile?.role as UserRole) ?? UserRole.CLIENT;
             setRole(userRole);
 
-            // Registration is complete if not a client OR (has address AND has at least one pet)
-            const isComplete = userRole !== UserRole.CLIENT || (!!profile?.address && pets.length > 0);
+            // Registration is complete if not a client OR (has address AND has phone AND has at least one pet)
+            const isComplete = userRole !== UserRole.CLIENT || (!!profile?.address && !!profile?.phone && pets.length > 0);
             setRegistrationComplete(isComplete);
 
             return userRole;
