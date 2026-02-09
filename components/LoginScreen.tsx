@@ -1,6 +1,7 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
+import { useAuth } from '../context/AuthContext';
+import { UserRole } from '../types';
 
 const LoginScreen: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -17,6 +18,19 @@ const LoginScreen: React.FC = () => {
   const [petBreed, setPetBreed] = useState('');
   const [regStep, setRegStep] = useState<'AUTH' | 'ADDRESS' | 'PET'>('AUTH');
   const [showPassword, setShowPassword] = useState(false);
+  const { user, profile, pets, registrationComplete, role, refreshAuthData } = useAuth();
+
+  // Effect to sync step if already logged in but incomplete
+  useEffect(() => {
+    if (user && role === UserRole.CLIENT && !registrationComplete) {
+      setIsSignUp(true);
+      if (!profile?.address) {
+        setRegStep('ADDRESS');
+      } else if (pets.length === 0) {
+        setRegStep('PET');
+      }
+    }
+  }, [user, role, registrationComplete, profile, pets]);
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,6 +53,7 @@ const LoginScreen: React.FC = () => {
               nickname: nickname || email.split('@')[0],
               full_name: nickname || email.split('@')[0],
             });
+            await refreshAuthData();
             setRegStep('ADDRESS');
           }
         } else if (regStep === 'ADDRESS') {
@@ -51,6 +66,7 @@ const LoginScreen: React.FC = () => {
           }).eq('id', user.id);
 
           if (error) throw error;
+          await refreshAuthData();
           setRegStep('PET');
         } else if (regStep === 'PET') {
           const { data: { user } } = await supabase.auth.getUser();
@@ -66,10 +82,10 @@ const LoginScreen: React.FC = () => {
           });
 
           if (petError) throw petError;
+          await refreshAuthData();
 
           setMessage('Cadastro completo! Bem-vindo(a).');
-          // Reload to trigger App.tsx logic and go to Home
-          window.location.reload();
+          // No reload needed, App.tsx will react to registrationComplete change
         }
       } else {
         const { error } = await supabase.auth.signInWithPassword({

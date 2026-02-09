@@ -22,7 +22,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { Pet } from './lib/database';
 
 const AppContent: React.FC = () => {
-  const { user, role, loading } = useAuth();
+  const { user, role, loading, registrationComplete } = useAuth();
   const [currentScreen, setCurrentScreen] = useState<Screen>('LOGIN');
   const [selectedService, setSelectedService] = useState<Service | null>(null);
   const [petToEdit, setPetToEdit] = useState<Pet | null>(null);
@@ -44,7 +44,9 @@ const AppContent: React.FC = () => {
         // But if on LOGIN, go to dashboard/home
         if (currentScreen === 'LOGIN') {
           const isAdminOrStaff = role === UserRole.ADMIN || role === UserRole.STAFF;
-          setCurrentScreen(isAdminOrStaff ? 'ADMIN_DASHBOARD' : 'HOME');
+          if (isAdminOrStaff || registrationComplete) {
+            setCurrentScreen(isAdminOrStaff ? 'ADMIN_DASHBOARD' : 'HOME');
+          }
         }
       } else {
         setCurrentScreen('LOGIN');
@@ -73,7 +75,7 @@ const AppContent: React.FC = () => {
       );
     }
 
-    if (!user) {
+    if (!user || (role === UserRole.CLIENT && !registrationComplete)) {
       return <LoginScreen />;
     }
 

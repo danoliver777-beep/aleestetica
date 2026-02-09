@@ -10,6 +10,10 @@ interface AuthContextType {
     session: Session | null;
     loading: boolean;
     role: UserRole | null;
+    registrationComplete: boolean;
+    profile: any | null;
+    pets: any[];
+    refreshAuthData: () => Promise<void>;
     signIn: () => void; // Placeholder, actions handled in components mostly
     signOut: () => Promise<void>;
 }
@@ -21,6 +25,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const [session, setSession] = useState<Session | null>(null);
     const [loading, setLoading] = useState(true);
     const [role, setRole] = useState<UserRole | null>(null);
+    const [profile, setProfile] = useState<any | null>(null);
+    const [pets, setPets] = useState<any[]>([]);
+    const [registrationComplete, setRegistrationComplete] = useState(true);
 
     useEffect(() => {
         const fetchRole = async (user: User) => {
@@ -37,14 +44,29 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             try {
                 // Set a timeout for the profile fetch to prevent app hang
                 const profilePromise = getProfile(user.id);
+                const petsPromise = supabase.from('pets').select('id').eq('user_id', user.id);
                 const timeoutPromise = new Promise((_, reject) =>
                     setTimeout(() => reject(new Error('Timeout')), 3000)
                 );
 
-                const profile = await Promise.race([profilePromise, timeoutPromise]) as any;
+                const [profileRes, petsRes] = await Promise.all([
+                    Promise.race([profilePromise, timeoutPromise]),
+                    Promise.race([petsPromise, timeoutPromise])
+                ]) as [any, any];
+
+                const profile = profileRes;
+                const pets = petsRes?.data || [];
+
+                setProfile(profile);
+                setPets(pets);
 
                 const userRole = (profile?.role as UserRole) ?? UserRole.CLIENT;
                 setRole(userRole);
+
+                // Registration is complete if not a client OR (has address AND has at least one pet)
+                const isComplete = userRole !== UserRole.CLIENT || (!!profile?.address && pets.length > 0);
+                setRegistrationComplete(isComplete);
+
                 return userRole;
             } catch (err) {
                 console.error('Error fetching role:', err);
@@ -52,7 +74,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                     user.email === 'funcionario@aleestetica.com' ? UserRole.STAFF :
                         UserRole.CLIENT;
                 setRole(fallbackRole);
+                setRegistrationComplete(fallbackRole !== UserRole.CLIENT);
                 return fallbackRole;
+            }
+        };
+
+        const refreshAuthData = async () => {
+            if (user) {
+                await fetchRole(user);
             }
         };
 
@@ -153,6 +182,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         session,
         loading,
         role,
+        registrationComplete,
+        profile,
+        pets,
+        refreshAuthData,
         signIn,
         signOut
     };
