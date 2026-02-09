@@ -52,7 +52,7 @@ const AppContent: React.FC = () => {
         setCurrentScreen('LOGIN');
       }
     }
-  }, [user, role, loading]);
+  }, [user, role, loading, registrationComplete, currentScreen]);
 
   useEffect(() => {
     // Listen for PASSWORD_RECOVERY event
@@ -117,8 +117,7 @@ const AppContent: React.FC = () => {
           }}
         />;
       case 'LOGIN':
-        // Fallback if user is logged in but screen is stuck on LOGIN (should be handled by effect)
-        return null;
+        return <LoginScreen />;
       default:
         return <ClientHomeScreen onNavigate={setCurrentScreen} onSelectService={setSelectedService} />;
     }
