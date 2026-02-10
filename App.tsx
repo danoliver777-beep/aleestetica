@@ -23,7 +23,10 @@ import { Pet } from './lib/database';
 
 const AppContent: React.FC = () => {
   const { user, role, loading, registrationComplete } = useAuth();
-  const [currentScreen, setCurrentScreen] = useState<Screen>('LOGIN');
+  const [currentScreen, setCurrentScreen] = useState<Screen>(() => {
+    const saved = localStorage.getItem('currentScreen');
+    return (saved as Screen) || 'LOGIN';
+  });
   const [selectedService, setSelectedService] = useState<Service | null>(null);
   const [petToEdit, setPetToEdit] = useState<Pet | null>(null);
 
@@ -34,6 +37,7 @@ const AppContent: React.FC = () => {
       setPetToEdit(null);
     }
     setCurrentScreen(screen);
+    localStorage.setItem('currentScreen', screen);
   };
 
   // Sync screen with auth state
@@ -45,11 +49,14 @@ const AppContent: React.FC = () => {
         if (currentScreen === 'LOGIN') {
           const isAdminOrStaff = role === UserRole.ADMIN || role === UserRole.STAFF;
           if (isAdminOrStaff || registrationComplete) {
-            setCurrentScreen(isAdminOrStaff ? 'ADMIN_DASHBOARD' : 'HOME');
+            const dest = isAdminOrStaff ? 'ADMIN_DASHBOARD' : 'HOME' as Screen;
+            setCurrentScreen(dest);
+            localStorage.setItem('currentScreen', dest);
           }
         }
       } else {
         setCurrentScreen('LOGIN');
+        localStorage.removeItem('currentScreen');
       }
     }
   }, [user, role, loading, registrationComplete, currentScreen]);

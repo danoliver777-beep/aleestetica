@@ -63,7 +63,9 @@ interface PaymentMethods {
 
 const AdminSettingsScreen: React.FC<AdminSettingsProps> = ({ onNavigate }) => {
     const { user, signOut, role } = useAuth();
-    const [activeModal, setActiveModal] = useState<ModalType>(null);
+    const [activeModal, setActiveModal] = useState<ModalType>(() => {
+        return localStorage.getItem('adminActiveModal') as ModalType || null;
+    });
     const [loading, setLoading] = useState(true);
 
     // Settings states
@@ -146,6 +148,42 @@ const AdminSettingsScreen: React.FC<AdminSettingsProps> = ({ onNavigate }) => {
 
         fetchSettings();
     }, []);
+
+    // Save/Restore modal and client state
+    useEffect(() => {
+        if (activeModal) {
+            localStorage.setItem('adminActiveModal', activeModal);
+        } else {
+            localStorage.removeItem('adminActiveModal');
+            localStorage.removeItem('adminSelectedClient');
+        }
+    }, [activeModal]);
+
+    useEffect(() => {
+        const restoreSelectedClient = async () => {
+            const savedClient = localStorage.getItem('adminSelectedClient');
+            if (savedClient && activeModal === 'clients') {
+                try {
+                    const profile = JSON.parse(savedClient) as Profile;
+                    // We need to make sure the profiles have been loaded first or just set it
+                    setSelectedClient(profile);
+                    setEditingClient({
+                        full_name: profile.full_name || '',
+                        phone: profile.phone || '',
+                        address: profile.address || '',
+                        neighborhood: profile.neighborhood || ''
+                    });
+                    const pets = await getPets(profile.id);
+                    setClientPets(pets);
+                } catch (e) {
+                    console.error('Error restoring client state:', e);
+                }
+            }
+        };
+        if (activeModal === 'clients' && !selectedClient) {
+            restoreSelectedClient();
+        }
+    }, [activeModal]);
 
     const closeModal = () => setActiveModal(null);
 
@@ -276,6 +314,7 @@ const AdminSettingsScreen: React.FC<AdminSettingsProps> = ({ onNavigate }) => {
             address: profile.address || '',
             neighborhood: profile.neighborhood || ''
         });
+        localStorage.setItem('adminSelectedClient', JSON.stringify(profile));
         try {
             const pets = await getPets(profile.id);
             setClientPets(pets);
@@ -358,7 +397,9 @@ const AdminSettingsScreen: React.FC<AdminSettingsProps> = ({ onNavigate }) => {
                 p.id === selectedClient.id ? { ...p, ...editingClient } : p
             );
             setAllProfiles(updatedProfiles);
-            setSelectedClient({ ...selectedClient, ...editingClient } as Profile);
+            const newSelected = { ...selectedClient, ...editingClient } as Profile;
+            setSelectedClient(newSelected);
+            localStorage.setItem('adminSelectedClient', JSON.stringify(newSelected));
             alert('Cliente atualizado com sucesso!');
         } catch (error) {
             console.error('Error saving client:', error);
@@ -866,6 +907,7 @@ const AdminSettingsScreen: React.FC<AdminSettingsProps> = ({ onNavigate }) => {
                                         onClick={() => {
                                             if (selectedClient) {
                                                 setSelectedClient(null);
+                                                localStorage.removeItem('adminSelectedClient');
                                             } else {
                                                 closeModal();
                                             }
