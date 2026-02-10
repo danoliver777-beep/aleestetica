@@ -106,6 +106,13 @@ const AdminEditBookingModal: React.FC<AdminEditBookingModalProps> = ({
         window.open(`https://wa.me/55${phone}`, '_blank');
     };
 
+    const handleOpenMaps = () => {
+        if (!appointment?.profile?.address) return;
+        const fullAddress = `${appointment.profile.address}${appointment.profile.neighborhood ? `, ${appointment.profile.neighborhood}` : ''}`;
+        const encodedAddress = encodeURIComponent(fullAddress);
+        window.open(`https://www.google.com/maps/search/?api=1&query=${encodedAddress}`, '_blank');
+    };
+
     if (!isOpen || !appointment) return null;
 
     return (
@@ -146,8 +153,12 @@ const AdminEditBookingModal: React.FC<AdminEditBookingModalProps> = ({
                                             <span className="material-symbols-outlined text-[16px] text-primary">person</span>
                                             <span className="text-xs font-semibold">{appointment.profile?.full_name} {appointment.profile?.nickname ? `(${appointment.profile?.nickname})` : ''}</span>
                                         </div>
-                                        <div className="flex items-start gap-2">
-                                            <span className="material-symbols-outlined text-[16px] text-primary mt-0.5">location_on</span>
+                                        <div
+                                            onClick={handleOpenMaps}
+                                            className="flex items-start gap-2 cursor-pointer hover:underline group"
+                                            title="Ver no Google Maps"
+                                        >
+                                            <span className="material-symbols-outlined text-[16px] text-primary mt-0.5 group-hover:scale-110 transition-transform">location_on</span>
                                             <span className="text-xs text-gray-600 dark:text-gray-400">
                                                 {appointment.profile?.address || 'Endereço não informado'}
                                                 {appointment.profile?.neighborhood ? ` - ${appointment.profile?.neighborhood}` : ''}
