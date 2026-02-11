@@ -42,7 +42,6 @@ const AdminBookingModal: React.FC<AdminBookingModalProps> = ({
     // Recurrence States
     const [isRecurring, setIsRecurring] = useState(false);
     const [recurrenceType, setRecurrenceType] = useState<'WEEKLY' | 'BIWEEKLY' | 'MONTHLY'>('WEEKLY');
-    const [recurrenceCount, setRecurrenceCount] = useState(1);
 
     // UI States
     const [loading, setLoading] = useState(false);
@@ -109,12 +108,14 @@ const AdminBookingModal: React.FC<AdminBookingModalProps> = ({
         // Use local parts to avoid timezone shift
         const [year, month, day] = date.split('-').map(Number);
         const baseDate = new Date(year, month - 1, day);
+        const limitDate = new Date(year + 1, month - 1, day); // 1 year limit
 
         // First Appointment
         dates.push(date);
 
-        if (isRecurring && recurrenceCount > 1) {
-            for (let i = 1; i < recurrenceCount; i++) {
+        if (isRecurring) {
+            let i = 1;
+            while (true) {
                 const nextDate = new Date(baseDate);
 
                 if (recurrenceType === 'WEEKLY') {
@@ -125,11 +126,14 @@ const AdminBookingModal: React.FC<AdminBookingModalProps> = ({
                     nextDate.setMonth(baseDate.getMonth() + i);
                 }
 
+                if (nextDate > limitDate) break;
+
                 // Format back to YYYY-MM-DD
                 const y = nextDate.getFullYear();
                 const m = String(nextDate.getMonth() + 1).padStart(2, '0');
                 const d = String(nextDate.getDate()).padStart(2, '0');
                 dates.push(`${y}-${m}-${d}`);
+                i++;
             }
         }
         return dates;
@@ -228,7 +232,6 @@ const AdminBookingModal: React.FC<AdminBookingModalProps> = ({
             setSelectedPetId('');
             setSelectedAdminServices([]);
             setIsRecurring(false);
-            setRecurrenceCount(1);
         } catch (err) {
             console.error('Error creating appointments:', err);
             alert('Erro ao criar agendamentos. Verifique o console.');
@@ -483,44 +486,19 @@ const AdminBookingModal: React.FC<AdminBookingModalProps> = ({
                                             </div>
                                         </div>
 
-                                        <div>
-                                            <label className="block text-xs font-semibold text-gray-500 mb-1">
-                                                Quantidade de Agendamentos
-                                            </label>
-                                            <div className="flex items-center gap-4 bg-white dark:bg-gray-900 p-2 rounded-xl border border-gray-200 dark:border-gray-700">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setRecurrenceCount(prev => Math.max(1, prev - 1))}
-                                                    className="size-10 flex items-center justify-center rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200"
-                                                >
-                                                    <span className="material-symbols-outlined">remove</span>
-                                                </button>
-                                                <div className="flex-1 text-center font-bold text-lg select-none">
-                                                    {recurrenceCount}x
-                                                </div>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setRecurrenceCount(prev => Math.min(12, prev + 1))}
-                                                    className="size-10 flex items-center justify-center rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200"
-                                                >
-                                                    <span className="material-symbols-outlined">add</span>
-                                                </button>
+                                        <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg border border-blue-100 dark:border-blue-800/50">
+                                            <p className="text-xs font-bold text-blue-700 dark:text-blue-400 mb-1">
+                                                📅 {calculateDates().length} agendamentos até {new Date(new Date(date + 'T00:00:00').getFullYear() + 1, new Date(date + 'T00:00:00').getMonth(), new Date(date + 'T00:00:00').getDate()).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                                            </p>
+                                            <div className="flex flex-wrap gap-2 text-[10px] text-blue-600 dark:text-blue-300 font-medium">
+                                                {calculateDates().slice(0, 5).map((d, idx) => (
+                                                    <span key={d} className="bg-white/50 dark:bg-black/20 px-2 py-1 rounded">
+                                                        {idx === 0 ? '1ª: ' : ''}{new Date(d + 'T00:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
+                                                    </span>
+                                                ))}
+                                                {calculateDates().length > 5 && <span>+{calculateDates().length - 5} mais...</span>}
                                             </div>
                                         </div>
-
-                                        {recurrenceCount > 1 && (
-                                            <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg border border-blue-100 dark:border-blue-800/50">
-                                                <p className="text-xs font-bold text-blue-700 dark:text-blue-400 mb-1">Próximas datas:</p>
-                                                <div className="flex flex-wrap gap-2 text-[10px] text-blue-600 dark:text-blue-300 font-medium">
-                                                    {calculateDates().slice(0, 4).map((d, idx) => (
-                                                        <span key={d} className="bg-white/50 dark:bg-black/20 px-2 py-1 rounded">
-                                                            {idx === 0 ? 'Hoje: ' : ''}{new Date(d + 'T00:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
-                                                        </span>
-                                                    ))}
-                                                    {recurrenceCount > 4 && <span>...</span>}
-                                                </div>
-                                            </div>
-                                        )}
                                     </div>
                                 )}
                             </div>
@@ -545,7 +523,7 @@ const AdminBookingModal: React.FC<AdminBookingModalProps> = ({
                         ) : (
                             <>
                                 <span className="material-symbols-outlined">event_available</span>
-                                Agendar {isRecurring && `(${recurrenceCount}x)`}
+                                Agendar {isRecurring && `(${calculateDates().length}x)`}
                             </>
                         )}
                     </button>
