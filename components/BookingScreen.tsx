@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { getPets, getServices, createAppointment, checkTimeConflict, Pet, Service, getAdminSetting, BusinessInfo } from '../lib/database';
 
 interface BookingProps {
-  service?: { id: string; name: string; description: string; price: number; duration: string; image_url: string; rating: number } | null;
+  service?: { id: string; name: string; price: number; description?: string | null; duration?: string | null; image?: string | null; image_url?: string | null; rating?: number | null } | null;
   onBack: () => void;
   onSuccess: () => void;
 }
