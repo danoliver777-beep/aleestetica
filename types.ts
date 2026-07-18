@@ -19,7 +19,7 @@ export interface Pet {
   breed: string;
   age?: string;
   type: 'dog' | 'cat' | 'other';
-  image: string;
+  image_url: string;
   status?: string;
 }
 
@@ -29,7 +29,7 @@ export interface Service {
   description: string;
   price: number;
   duration: string;
-  image: string;
+  image_url: string;
   rating: number;
 }
 

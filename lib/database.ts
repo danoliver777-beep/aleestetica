@@ -434,7 +434,8 @@ export const getAdminStats = async (): Promise<{
     pendingCount: number;
     todayRevenue: number;
 }> => {
-    const today = new Date().toISOString().split('T')[0];
+    const d = new Date();
+    const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
     // Get today's appointments
     const { data: todayApps, error: todayError } = await supabase
@@ -487,13 +488,15 @@ export const getFinancialStats = async (): Promise<FinancialStats> => {
     const currentYear = now.getFullYear();
     const currentMonth = now.getMonth();
 
+    const formatLocal = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
     // Current month date range
-    const currentMonthStart = new Date(currentYear, currentMonth, 1).toISOString().split('T')[0];
-    const currentMonthEnd = new Date(currentYear, currentMonth + 1, 0).toISOString().split('T')[0];
+    const currentMonthStart = formatLocal(new Date(currentYear, currentMonth, 1));
+    const currentMonthEnd = formatLocal(new Date(currentYear, currentMonth + 1, 0));
 
     // Last month date range
-    const lastMonthStart = new Date(currentYear, currentMonth - 1, 1).toISOString().split('T')[0];
-    const lastMonthEnd = new Date(currentYear, currentMonth, 0).toISOString().split('T')[0];
+    const lastMonthStart = formatLocal(new Date(currentYear, currentMonth - 1, 1));
+    const lastMonthEnd = formatLocal(new Date(currentYear, currentMonth, 0));
 
     // Fetch current month appointments
     const { data: currentMonthApps, error: currentError } = await supabase
