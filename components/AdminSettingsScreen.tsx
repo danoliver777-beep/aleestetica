@@ -17,7 +17,8 @@ import {
     uploadAvatar,
     uploadPetImage,
     Profile,
-    Pet
+    Pet,
+    BusinessInfo
 } from '../lib/database';
 
 // Reusable Toggle Switch Component
@@ -41,7 +42,7 @@ interface AdminSettingsProps {
     onNavigate: (s: Screen) => void;
 }
 
-type ModalType = 'notifications' | 'hours' | 'payments' | 'help' | 'terms' | 'clients' | null;
+type ModalType = 'notifications' | 'hours' | 'payments' | 'business' | 'help' | 'terms' | 'clients' | null;
 
 interface DailyHours {
     open: string;
@@ -62,7 +63,9 @@ interface PaymentMethods {
 
 const AdminSettingsScreen: React.FC<AdminSettingsProps> = ({ onNavigate }) => {
     const { user, signOut, role } = useAuth();
-    const [activeModal, setActiveModal] = useState<ModalType>(null);
+    const [activeModal, setActiveModal] = useState<ModalType>(() => {
+        return localStorage.getItem('adminActiveModal') as ModalType || null;
+    });
     const [loading, setLoading] = useState(true);
 
     // Settings states
@@ -88,6 +91,11 @@ const AdminSettingsScreen: React.FC<AdminSettingsProps> = ({ onNavigate }) => {
         debito: true,
     });
 
+    const [businessInfo, setBusinessInfo] = useState<BusinessInfo>({
+        whatsapp: '5511999999999',
+        email: 'suporte@alessandropet.com'
+    });
+
     const [broadcastTitle, setBroadcastTitle] = useState('');
     const [broadcastMessage, setBroadcastMessage] = useState('');
     const [sendingBroadcast, setSendingBroadcast] = useState(false);
@@ -110,7 +118,7 @@ const AdminSettingsScreen: React.FC<AdminSettingsProps> = ({ onNavigate }) => {
         const fetchSettings = async () => {
             try {
                 setLoading(true);
-                const [notif, hours, payment] = await Promise.all([
+                const [notif, hours, payment, business] = await Promise.all([
                     getAdminSetting<{
                         enabled: boolean;
                         newApp: boolean;
@@ -118,7 +126,8 @@ const AdminSettingsScreen: React.FC<AdminSettingsProps> = ({ onNavigate }) => {
                         reminder: boolean;
                     }>('notifications'),
                     getAdminSetting<typeof businessHours>('business_hours'),
-                    getAdminSetting<typeof paymentMethods>('payment_methods')
+                    getAdminSetting<typeof paymentMethods>('payment_methods'),
+                    getAdminSetting<BusinessInfo>('business_info')
                 ]);
 
                 if (notif) {
@@ -129,6 +138,7 @@ const AdminSettingsScreen: React.FC<AdminSettingsProps> = ({ onNavigate }) => {
                 }
                 if (hours) setBusinessHours(hours);
                 if (payment) setPaymentMethods(payment);
+                if (business) setBusinessInfo(business);
             } catch (error) {
                 console.error('Error fetching admin settings:', error);
             } finally {
@@ -138,6 +148,42 @@ const AdminSettingsScreen: React.FC<AdminSettingsProps> = ({ onNavigate }) => {
 
         fetchSettings();
     }, []);
+
+    // Save/Restore modal and client state
+    useEffect(() => {
+        if (activeModal) {
+            localStorage.setItem('adminActiveModal', activeModal);
+        } else {
+            localStorage.removeItem('adminActiveModal');
+            localStorage.removeItem('adminSelectedClient');
+        }
+    }, [activeModal]);
+
+    useEffect(() => {
+        const restoreSelectedClient = async () => {
+            const savedClient = localStorage.getItem('adminSelectedClient');
+            if (savedClient && activeModal === 'clients') {
+                try {
+                    const profile = JSON.parse(savedClient) as Profile;
+                    // We need to make sure the profiles have been loaded first or just set it
+                    setSelectedClient(profile);
+                    setEditingClient({
+                        full_name: profile.full_name || '',
+                        phone: profile.phone || '',
+                        address: profile.address || '',
+                        neighborhood: profile.neighborhood || ''
+                    });
+                    const pets = await getPets(profile.id);
+                    setClientPets(pets);
+                } catch (e) {
+                    console.error('Error restoring client state:', e);
+                }
+            }
+        };
+        if (activeModal === 'clients' && !selectedClient) {
+            restoreSelectedClient();
+        }
+    }, [activeModal]);
 
     const closeModal = () => setActiveModal(null);
 
@@ -185,6 +231,19 @@ const AdminSettingsScreen: React.FC<AdminSettingsProps> = ({ onNavigate }) => {
         }
     };
 
+    const saveBusinessInfo = async () => {
+        try {
+            setLoading(true);
+            await upsertAdminSetting('business_info', businessInfo);
+            closeModal();
+        } catch (error) {
+            console.error('Error saving business info:', error);
+            alert('Erro ao salvar informações do estabelecimento');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const handleSendBroadcast = async () => {
         if (!broadcastTitle.trim() || !broadcastMessage.trim()) {
             alert('Por favor, preencha o título e a mensagem');
@@ -225,6 +284,16 @@ const AdminSettingsScreen: React.FC<AdminSettingsProps> = ({ onNavigate }) => {
     };
 
     // Client management functions
+    const openWhatsApp = (phone: string | null) => {
+        if (!phone) {
+            alert('Telefone do cliente não cadastrado.');
+            return;
+        }
+        const cleanPhone = phone.replace(/\D/g, '');
+        const finalPhone = cleanPhone.length <= 11 ? `55${cleanPhone}` : cleanPhone;
+        window.open(`https://wa.me/${finalPhone}`, '_blank');
+    };
+
     const openClientsModal = async () => {
         setActiveModal('clients');
         setSelectedClient(null);
@@ -245,6 +314,7 @@ const AdminSettingsScreen: React.FC<AdminSettingsProps> = ({ onNavigate }) => {
             address: profile.address || '',
             neighborhood: profile.neighborhood || ''
         });
+        localStorage.setItem('adminSelectedClient', JSON.stringify(profile));
         try {
             const pets = await getPets(profile.id);
             setClientPets(pets);
@@ -327,7 +397,9 @@ const AdminSettingsScreen: React.FC<AdminSettingsProps> = ({ onNavigate }) => {
                 p.id === selectedClient.id ? { ...p, ...editingClient } : p
             );
             setAllProfiles(updatedProfiles);
-            setSelectedClient({ ...selectedClient, ...editingClient } as Profile);
+            const newSelected = { ...selectedClient, ...editingClient } as Profile;
+            setSelectedClient(newSelected);
+            localStorage.setItem('adminSelectedClient', JSON.stringify(newSelected));
             alert('Cliente atualizado com sucesso!');
         } catch (error) {
             console.error('Error saving client:', error);
@@ -440,6 +512,16 @@ const AdminSettingsScreen: React.FC<AdminSettingsProps> = ({ onNavigate }) => {
                                 <div className="flex items-center gap-3">
                                     <span className="material-symbols-outlined text-gray-400">payments</span>
                                     <span className="font-medium">Formas de Pagamento</span>
+                                </div>
+                                <span className="material-symbols-outlined text-gray-400">chevron_right</span>
+                            </button>
+                            <button
+                                onClick={() => setActiveModal('business')}
+                                className="w-full flex items-center justify-between p-4 hover:bg-gray-50 rounded-xl transition-colors"
+                            >
+                                <div className="flex items-center gap-3">
+                                    <span className="material-symbols-outlined text-gray-400">store</span>
+                                    <span className="font-medium">Informações do Estabelecimento</span>
                                 </div>
                                 <span className="material-symbols-outlined text-gray-400">chevron_right</span>
                             </button>
@@ -693,6 +775,48 @@ const AdminSettingsScreen: React.FC<AdminSettingsProps> = ({ onNavigate }) => {
                             </>
                         )}
 
+                        {/* Business Info Modal */}
+                        {activeModal === 'business' && (
+                            <>
+                                <div className="flex items-center justify-between mb-6">
+                                    <h2 className="text-xl font-bold">Informações do Estabelecimento</h2>
+                                    <button onClick={closeModal} className="p-2 hover:bg-gray-100 rounded-full">
+                                        <span className="material-symbols-outlined">close</span>
+                                    </button>
+                                </div>
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="text-xs font-bold text-gray-500 uppercase ml-1">WhatsApp de Atendimento</label>
+                                        <input
+                                            type="tel"
+                                            value={businessInfo.whatsapp}
+                                            onChange={(e) => setBusinessInfo(prev => ({ ...prev, whatsapp: e.target.value }))}
+                                            placeholder="Ex: 5511999999999"
+                                            className="w-full mt-1 p-3 bg-gray-50 border border-gray-100 rounded-xl focus:ring-2 focus:ring-primary text-sm"
+                                        />
+                                        <p className="text-[10px] text-gray-400 mt-1 ml-1">* Use o formato com DDD e sem espaços (ex: 5511940028922)</p>
+                                    </div>
+                                    <div>
+                                        <label className="text-xs font-bold text-gray-500 uppercase ml-1">E-mail de Suporte</label>
+                                        <input
+                                            type="email"
+                                            value={businessInfo.email}
+                                            onChange={(e) => setBusinessInfo(prev => ({ ...prev, email: e.target.value }))}
+                                            placeholder="suporte@exemplo.com"
+                                            className="w-full mt-1 p-3 bg-gray-50 border border-gray-100 rounded-xl focus:ring-2 focus:ring-primary text-sm"
+                                        />
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={saveBusinessInfo}
+                                    disabled={loading}
+                                    className="w-full mt-6 py-4 bg-primary text-white font-bold rounded-xl disabled:opacity-50"
+                                >
+                                    {loading ? 'Salvando...' : 'Salvar Alterações'}
+                                </button>
+                            </>
+                        )}
+
                         {/* Help & Support Modal */}
                         {activeModal === 'help' && (
                             <>
@@ -705,8 +829,8 @@ const AdminSettingsScreen: React.FC<AdminSettingsProps> = ({ onNavigate }) => {
                                 <div className="space-y-4">
                                     <div className="p-4 bg-blue-50 rounded-xl">
                                         <h3 className="font-bold text-blue-700 mb-2">📞 Contato</h3>
-                                        <a href="tel:+5511999999999" className="block text-sm text-blue-600 hover:underline">WhatsApp: (11) 99999-9999</a>
-                                        <a href="mailto:suporte@alessandropet.com" className="block text-sm text-blue-600 hover:underline">E-mail: suporte@alessandropet.com</a>
+                                        <a href={`tel:${businessInfo.whatsapp}`} className="block text-sm text-blue-600 hover:underline">WhatsApp: {businessInfo.whatsapp}</a>
+                                        <a href={`mailto:${businessInfo.email}`} className="block text-sm text-blue-600 hover:underline">E-mail: {businessInfo.email}</a>
                                     </div>
                                     <div className="p-4 bg-gray-50 rounded-xl">
                                         <h3 className="font-bold mb-2">❓ Perguntas Frequentes</h3>
@@ -726,7 +850,7 @@ const AdminSettingsScreen: React.FC<AdminSettingsProps> = ({ onNavigate }) => {
                                         </div>
                                     </div>
                                     <a
-                                        href="https://wa.me/5511999999999"
+                                        href={`https://wa.me/${businessInfo.whatsapp}`}
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className="w-full flex items-center justify-center gap-2 py-4 bg-green-500 text-white font-bold rounded-xl"
@@ -783,6 +907,7 @@ const AdminSettingsScreen: React.FC<AdminSettingsProps> = ({ onNavigate }) => {
                                         onClick={() => {
                                             if (selectedClient) {
                                                 setSelectedClient(null);
+                                                localStorage.removeItem('adminSelectedClient');
                                             } else {
                                                 closeModal();
                                             }
@@ -864,7 +989,21 @@ const AdminSettingsScreen: React.FC<AdminSettingsProps> = ({ onNavigate }) => {
                                                 />
                                             </div>
                                             <div>
-                                                <label className="text-xs font-bold text-gray-500 uppercase ml-1">Telefone</label>
+                                                <label className="text-xs font-bold text-gray-500 uppercase ml-1 flex items-center justify-between">
+                                                    Telefone
+                                                    {editingClient.phone && (
+                                                        <button
+                                                            onClick={() => openWhatsApp(editingClient.phone || null)}
+                                                            className="text-[10px] text-green-600 font-bold flex items-center gap-1 hover:text-green-700 transition-colors"
+                                                            title="Chamar no WhatsApp"
+                                                        >
+                                                            <svg viewBox="0 0 24 24" fill="currentColor" className="size-3">
+                                                                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+                                                            </svg>
+                                                            WhatsApp do Cliente
+                                                        </button>
+                                                    )}
+                                                </label>
                                                 <input
                                                     type="tel"
                                                     value={editingClient.phone || ''}

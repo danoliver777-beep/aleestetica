@@ -41,7 +41,7 @@ const AdminEditBookingModal: React.FC<AdminEditBookingModalProps> = ({
             loadInitialData();
             setSelectedServiceId(appointment.service_id || '');
             setDate(appointment.scheduled_date);
-            setTime(appointment.scheduled_time.substring(0, 5));
+            setTime(appointment.scheduled_time ? appointment.scheduled_time.substring(0, 5) : '09:00');
             setNotes(appointment.notes || '');
         }
     }, [isOpen, appointment]);
@@ -67,7 +67,8 @@ const AdminEditBookingModal: React.FC<AdminEditBookingModalProps> = ({
         setSaving(true);
         try {
             // Only check for conflict if date or time changed
-            if (date !== appointment.scheduled_date || time !== appointment.scheduled_time.substring(0, 5)) {
+            const oldTime = appointment.scheduled_time ? appointment.scheduled_time.substring(0, 5) : null;
+            if (date !== appointment.scheduled_date || time !== oldTime) {
                 const { hasConflict } = await checkTimeConflict(date, time);
                 if (hasConflict) {
                     const proceed = confirm(`⚠️ Conflito de horário detectado! Já existe um agendamento para este horário em ${date}. Deseja continuar mesmo assim?`);
@@ -105,6 +106,13 @@ const AdminEditBookingModal: React.FC<AdminEditBookingModalProps> = ({
         window.open(`https://wa.me/55${phone}`, '_blank');
     };
 
+    const handleOpenMaps = () => {
+        if (!appointment?.profile?.address) return;
+        const fullAddress = `${appointment.profile.address}${appointment.profile.neighborhood ? `, ${appointment.profile.neighborhood}` : ''}`;
+        const encodedAddress = encodeURIComponent(fullAddress);
+        window.open(`https://www.google.com/maps/search/?api=1&query=${encodedAddress}`, '_blank');
+    };
+
     if (!isOpen || !appointment) return null;
 
     return (
@@ -114,7 +122,7 @@ const AdminEditBookingModal: React.FC<AdminEditBookingModalProps> = ({
                 <div className="p-6 bg-primary text-white flex justify-between items-center sticky top-0 z-10">
                     <div className="flex flex-col">
                         <h2 className="text-xl font-bold">Editar Agendamento</h2>
-                        <span className="text-xs opacity-80">{appointment.pet?.name} • {appointment.profile?.full_name}</span>
+                        <span className="text-xs opacity-80">{appointment.pet?.name} • {appointment.profile?.nickname || appointment.profile?.full_name}</span>
                     </div>
                     <button onClick={onClose} className="p-1 hover:bg-white/20 rounded-full transition-colors">
                         <span className="material-symbols-outlined">close</span>
@@ -140,12 +148,25 @@ const AdminEditBookingModal: React.FC<AdminEditBookingModalProps> = ({
                                 <div className="flex-1">
                                     <h3 className="font-bold text-lg leading-tight">{appointment.pet?.name}</h3>
                                     <p className="text-sm text-gray-500">{appointment.pet?.breed || 'Raça não informada'}</p>
-                                    <div className="flex items-center gap-2 mt-1">
-                                        <span className="material-symbols-outlined text-xs text-primary">person</span>
-                                        <span className="text-xs font-medium">{appointment.profile?.full_name}</span>
+                                    <div className="mt-2 space-y-1">
+                                        <div className="flex items-center gap-2">
+                                            <span className="material-symbols-outlined text-[16px] text-primary">person</span>
+                                            <span className="text-xs font-semibold">{appointment.profile?.full_name} {appointment.profile?.nickname ? `(${appointment.profile?.nickname})` : ''}</span>
+                                        </div>
+                                        <div
+                                            onClick={handleOpenMaps}
+                                            className="flex items-start gap-2 cursor-pointer hover:underline group"
+                                            title="Ver no Google Maps"
+                                        >
+                                            <span className="material-symbols-outlined text-[16px] text-primary mt-0.5 group-hover:scale-110 transition-transform">location_on</span>
+                                            <span className="text-xs text-gray-600 dark:text-gray-400">
+                                                {appointment.profile?.address || 'Endereço não informado'}
+                                                {appointment.profile?.neighborhood ? ` - ${appointment.profile?.neighborhood}` : ''}
+                                            </span>
+                                        </div>
                                     </div>
                                 </div>
-                                <button 
+                                <button
                                     onClick={handleWhatsApp}
                                     className="flex size-12 items-center justify-center rounded-full bg-[#25D366] text-white hover:bg-[#20bd5a] transition-all shadow-md active:scale-90"
                                     title="Falar no WhatsApp"

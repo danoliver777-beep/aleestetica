@@ -12,6 +12,7 @@ export interface Profile {
     created_at: string;
     address?: string | null;
     neighborhood?: string | null;
+    nickname?: string | null;
 }
 
 export const getProfile = async (userId: string): Promise<Profile | null> => {
@@ -166,8 +167,8 @@ export interface Appointment {
     user_id: string;
     pet_id: string | null;
     service_id: string | null;
-    scheduled_date: string;
-    scheduled_time: string;
+    scheduled_date?: string | null;
+    scheduled_time: string | null;
     status: string;
     notes: string | null;
     created_at: string;
@@ -236,7 +237,8 @@ export const getAppointments = async (userId: string): Promise<Appointment[]> =>
       service:services(*)
     `)
         .eq('user_id', userId)
-        .order('scheduled_date', { ascending: true });
+        .order('scheduled_date', { ascending: true })
+        .limit(20);
 
     if (error) {
         console.error('Error fetching appointments:', error);
@@ -249,8 +251,8 @@ export const createAppointment = async (appointment: {
     user_id: string;
     pet_id: string;
     service_id: string;
-    scheduled_date: string;
-    scheduled_time: string;
+    scheduled_date?: string | null;
+    scheduled_time: string | null;
     notes?: string;
 }) => {
     const { data, error } = await supabase
@@ -284,8 +286,8 @@ export const updateAppointmentStatus = async (id: string, status: string) => {
 export const updateAppointment = async (id: string, updates: {
     pet_id?: string;
     service_id?: string;
-    scheduled_date?: string;
-    scheduled_time?: string;
+    scheduled_date?: string | null;
+    scheduled_time?: string | null;
     notes?: string;
 }) => {
     const { data, error } = await supabase
@@ -376,7 +378,12 @@ export interface AppointmentWithDetails extends Appointment {
 }
 
 // Get ALL appointments (for admin)
-export const getAllAppointments = async (dateFilter?: string): Promise<AppointmentWithDetails[]> => {
+export const getAllAppointments = async (options?: {
+    date?: string;
+    startDate?: string;
+    limit?: number
+}): Promise<AppointmentWithDetails[]> => {
+    const { date: dateFilter, startDate, limit = 100 } = options || {};
     // First, get appointments with pet and service (but NOT profile, since FK points to auth.users)
     let query = supabase
         .from('appointments')
@@ -390,6 +397,12 @@ export const getAllAppointments = async (dateFilter?: string): Promise<Appointme
 
     if (dateFilter) {
         query = query.eq('scheduled_date', dateFilter);
+    } else if (startDate) {
+        query = query.gte('scheduled_date', startDate);
+    }
+
+    if (limit && !dateFilter) {
+        query = query.limit(limit);
     }
 
     const { data: appointments, error } = await query;
@@ -671,6 +684,11 @@ export interface AdminSetting {
     category: string;
     value: any;
     updated_at: string;
+}
+
+export interface BusinessInfo {
+    whatsapp: string;
+    email: string;
 }
 
 export const getAdminSetting = async <T>(category: string): Promise<T | null> => {

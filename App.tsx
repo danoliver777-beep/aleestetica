@@ -22,8 +22,11 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { Pet } from './lib/database';
 
 const AppContent: React.FC = () => {
-  const { user, role, loading } = useAuth();
-  const [currentScreen, setCurrentScreen] = useState<Screen>('LOGIN');
+  const { user, role, loading, registrationComplete } = useAuth();
+  const [currentScreen, setCurrentScreen] = useState<Screen>(() => {
+    const saved = localStorage.getItem('currentScreen');
+    return (saved as Screen) || 'LOGIN';
+  });
   const [selectedService, setSelectedService] = useState<Service | null>(null);
   const [petToEdit, setPetToEdit] = useState<Pet | null>(null);
 
@@ -34,6 +37,7 @@ const AppContent: React.FC = () => {
       setPetToEdit(null);
     }
     setCurrentScreen(screen);
+    localStorage.setItem('currentScreen', screen);
   };
 
   // Sync screen with auth state
@@ -44,13 +48,18 @@ const AppContent: React.FC = () => {
         // But if on LOGIN, go to dashboard/home
         if (currentScreen === 'LOGIN') {
           const isAdminOrStaff = role === UserRole.ADMIN || role === UserRole.STAFF;
-          setCurrentScreen(isAdminOrStaff ? 'ADMIN_DASHBOARD' : 'HOME');
+          if (isAdminOrStaff || registrationComplete) {
+            const dest = isAdminOrStaff ? 'ADMIN_DASHBOARD' : 'HOME' as Screen;
+            setCurrentScreen(dest);
+            localStorage.setItem('currentScreen', dest);
+          }
         }
       } else {
         setCurrentScreen('LOGIN');
+        localStorage.removeItem('currentScreen');
       }
     }
-  }, [user, role, loading]);
+  }, [user, role, loading, registrationComplete, currentScreen]);
 
   useEffect(() => {
     // Listen for PASSWORD_RECOVERY event
@@ -73,7 +82,7 @@ const AppContent: React.FC = () => {
       );
     }
 
-    if (!user) {
+    if (!user || (role === UserRole.CLIENT && !registrationComplete)) {
       return <LoginScreen />;
     }
 
@@ -115,8 +124,7 @@ const AppContent: React.FC = () => {
           }}
         />;
       case 'LOGIN':
-        // Fallback if user is logged in but screen is stuck on LOGIN (should be handled by effect)
-        return null;
+        return <LoginScreen />;
       default:
         return <ClientHomeScreen onNavigate={setCurrentScreen} onSelectService={setSelectedService} />;
     }

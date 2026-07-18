@@ -30,21 +30,16 @@ const AdminDashboardScreen: React.FC<AdminDashboardProps> = ({ onNavigate }) => 
   const loadData = async () => {
     setLoading(true);
     try {
-      // Fetch stats and ALL upcoming appointments (no date filter)
+      const today = new Date().toISOString().split('T')[0];
+      // Fetch stats and ONLY upcoming appointments (filtered at DB level)
       const [statsData, appointmentsData] = await Promise.all([
         getAdminStats(),
-        getAllAppointments() // Remove date filter to get all appointments
+        getAllAppointments({ startDate: today, limit: 50 })
       ]);
       setStats(statsData);
-      // Filter to show only future or today's appointments, sorted by date
-      const today = new Date().toISOString().split('T')[0];
-      const upcoming = appointmentsData
-        .filter(a => a.scheduled_date >= today)
-        .sort((a, b) => {
-          if (a.scheduled_date !== b.scheduled_date) return a.scheduled_date.localeCompare(b.scheduled_date);
-          return a.scheduled_time.localeCompare(b.scheduled_time);
-        });
-      setAllUpcomingAppointments(upcoming);
+
+      // Data is already filtered and sorted by DB
+      setAllUpcomingAppointments(appointmentsData);
     } catch (err) {
       console.error('Error loading admin data:', err);
     } finally {
@@ -209,20 +204,21 @@ const AdminDashboardScreen: React.FC<AdminDashboardProps> = ({ onNavigate }) => 
                   if (!searchTerm) return true;
                   const term = searchTerm.toLowerCase();
 
-                  const dateObj = new Date(app.scheduled_date + 'T00:00:00');
-                  const dateDirect = app.scheduled_date; // yyyy-mm-dd
-                  const dateBr = dateObj.toLocaleDateString('pt-BR'); // dd/mm/yyyy
-                  const weekday = dateObj.toLocaleDateString('pt-BR', { weekday: 'long' });
+                  const dateObj = app.scheduled_date ? new Date(app.scheduled_date + 'T00:00:00') : null;
+                  const dateDirect = app.scheduled_date || '';
+                  const dateBr = dateObj ? dateObj.toLocaleDateString('pt-BR') : '';
+                  const weekday = dateObj ? dateObj.toLocaleDateString('pt-BR', { weekday: 'long' }) : '';
 
                   return (
-                    app.pet?.name.toLowerCase().includes(term) ||
+                    app.pet?.name?.toLowerCase().includes(term) ||
                     app.profile?.full_name?.toLowerCase().includes(term) ||
+                    app.profile?.nickname?.toLowerCase().includes(term) ||
                     app.profile?.address?.toLowerCase().includes(term) ||
                     app.profile?.neighborhood?.toLowerCase().includes(term) ||
-                    app.service?.name.toLowerCase().includes(term) ||
-                    dateBr.includes(term) ||
-                    dateDirect.includes(term) ||
-                    weekday.toLowerCase().includes(term)
+                    app.service?.name?.toLowerCase().includes(term) ||
+                    (dateBr && dateBr.includes(term)) ||
+                    (dateDirect && dateDirect.includes(term)) ||
+                    (weekday && weekday.toLowerCase().includes(term))
                   );
                 });
 
@@ -259,11 +255,11 @@ const AdminDashboardScreen: React.FC<AdminDashboardProps> = ({ onNavigate }) => 
                       <div className="flex justify-between items-center mb-0.5">
                         <p className="text-base font-bold">{app.pet?.name || 'Pet'}</p>
                         <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${app.status === 'PENDING' ? 'bg-orange-100 text-orange-700' : 'bg-green-100 text-green-700'}`}>
-                          {app.scheduled_time.substring(0, 5)}
+                          {app.scheduled_time ? app.scheduled_time.substring(0, 5) : 'A definir'}
                         </span>
                       </div>
                       <p className="line-clamp-1 text-xs text-gray-500">
-                        {app.service?.name} • {app.profile?.full_name || 'Cliente'} • <span className="capitalize">{new Date(app.scheduled_date + 'T00:00:00').toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' })}</span>
+                        {app.service?.name} • {app.profile?.nickname || app.profile?.full_name || 'Cliente'} • <span className="capitalize">{app.scheduled_date ? new Date(app.scheduled_date + 'T00:00:00').toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' }) : 'A definir'}</span>
                       </p>
                     </div>
                     <button
@@ -335,10 +331,10 @@ const AdminDashboardScreen: React.FC<AdminDashboardProps> = ({ onNavigate }) => 
                 <div>
                   <h4 className="text-sm font-bold text-gray-900 dark:text-gray-100">Data e Hora</h4>
                   <p className="text-gray-600 dark:text-gray-400 text-sm capitalize">
-                    {new Date(selectedAppointment.scheduled_date + 'T00:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
+                    {selectedAppointment.scheduled_date ? new Date(selectedAppointment.scheduled_date + 'T00:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' }) : 'Data a definir'}
                   </p>
                   <p className="text-gray-600 dark:text-gray-400 text-sm mt-0.5">
-                    às {selectedAppointment.scheduled_time.substring(0, 5)}
+                    às {selectedAppointment.scheduled_time ? selectedAppointment.scheduled_time.substring(0, 5) : 'A definir'}
                   </p>
                 </div>
               </div>
@@ -375,7 +371,7 @@ const AdminDashboardScreen: React.FC<AdminDashboardProps> = ({ onNavigate }) => 
                       </button>
                     )}
                   </div>
-                  <p className="text-gray-600 dark:text-gray-400 text-sm">{selectedAppointment.profile?.full_name || 'Desconhecido'}</p>
+                  <p className="text-gray-600 dark:text-gray-400 text-sm">{selectedAppointment.profile?.nickname || selectedAppointment.profile?.full_name || 'Desconhecido'}</p>
                   <div className="mt-1.5 flex items-start gap-1.5 p-2 rounded-lg bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-800">
                     <span className="material-symbols-outlined text-gray-400 text-sm mt-0.5">location_on</span>
                     <div className="flex-1">

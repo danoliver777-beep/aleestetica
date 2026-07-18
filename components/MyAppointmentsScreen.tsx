@@ -56,13 +56,14 @@ const MyAppointmentsScreen: React.FC<MyAppointmentsProps> = ({ onNavigate }) => 
   const today = new Date().toISOString().split('T')[0];
   const filteredAppointments = appointments.filter(app => {
     if (filter === 'future') {
-      return app.scheduled_date >= today;
+      return !app.scheduled_date || app.scheduled_date >= today;
     } else {
-      return app.scheduled_date < today;
+      return app.scheduled_date && app.scheduled_date < today;
     }
   });
 
-  const formatDate = (dateStr: string) => {
+  const formatDate = (dateStr: string | null) => {
+    if (!dateStr) return 'A definir';
     const date = new Date(dateStr + 'T00:00:00');
     return date.toLocaleDateString('pt-BR', { weekday: 'short', day: 'numeric', month: 'short' });
   };
@@ -153,7 +154,7 @@ const MyAppointmentsScreen: React.FC<MyAppointmentsProps> = ({ onNavigate }) => 
                 <div className="flex items-center justify-between border-t border-slate-100 pt-3">
                   <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
                     <span className="material-symbols-outlined text-primary">schedule</span>
-                    <span className="text-sm font-semibold">{formatDate(app.scheduled_date)} às {app.scheduled_time.substring(0, 5)}</span>
+                    <span className="text-sm font-semibold">{formatDate(app.scheduled_date)} às {app.scheduled_time ? app.scheduled_time.substring(0, 5) : 'A definir'}</span>
                   </div>
                   <div className="text-right">
                     <span className="text-sm font-bold text-primary">R$ {app.service?.price?.toFixed(2) || '0.00'}</span>

@@ -3,6 +3,7 @@ import { Screen } from '../types';
 import AdminBottomNav from './AdminBottomNav';
 import { getAllAppointments, updateAppointmentStatus, deleteAppointment, AppointmentWithDetails } from '../lib/database';
 import AdminBookingModal from './AdminBookingModal';
+import AdminEditBookingModal from './AdminEditBookingModal';
 import AdminCalendarView from './AdminCalendarView';
 
 interface AdminAgendaProps {
@@ -17,8 +18,11 @@ const AdminAgendaScreen: React.FC<AdminAgendaProps> = ({ onNavigate }) => {
   const [selectedTime, setSelectedTime] = useState('09:00');
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [showCalendarView, setShowCalendarView] = useState(false);
+  const [selectedAppointmentForEdit, setSelectedAppointmentForEdit] = useState<AppointmentWithDetails | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [calendarAppointments, setCalendarAppointments] = useState<AppointmentWithDetails[]>([]);
   const [openedFromCalendar, setOpenedFromCalendar] = useState(false);
+  const [allToDefineCount, setAllToDefineCount] = useState(0);
 
   useEffect(() => {
     loadAppointments();
@@ -27,8 +31,15 @@ const AdminAgendaScreen: React.FC<AdminAgendaProps> = ({ onNavigate }) => {
   const loadAppointments = async () => {
     setLoading(true);
     try {
-      const data = await getAllAppointments(selectedDate);
-      setAppointments(data);
+      // Load appointments for selected date AND count all 'a definir' appointments
+      const [dateData, allData] = await Promise.all([
+        getAllAppointments({ date: selectedDate }),
+        getAllAppointments({ limit: 500 })
+      ]);
+      setAppointments(dateData);
+      // Count all 'a definir' appointments across all dates
+      const toDefine = allData.filter(a => (!a.scheduled_time || !a.scheduled_date) && a.status !== 'CANCELED' && a.status !== 'COMPLETED');
+      setAllToDefineCount(toDefine.length);
     } catch (err) {
       console.error('Error loading appointments:', err);
     } finally {
@@ -39,8 +50,8 @@ const AdminAgendaScreen: React.FC<AdminAgendaProps> = ({ onNavigate }) => {
   const openCalendar = async () => {
     setLoading(true);
     try {
-      // Load ALL appointments for calendar view
-      const allData = await getAllAppointments();
+      // Load ALL appointments for calendar view (increased limit for global view)
+      const allData = await getAllAppointments({ limit: 500 });
       setCalendarAppointments(allData);
       setShowCalendarView(true);
     } catch (err) {
@@ -77,8 +88,8 @@ const AdminAgendaScreen: React.FC<AdminAgendaProps> = ({ onNavigate }) => {
   };
 
   const handleEdit = (appointment: AppointmentWithDetails) => {
-    // Navigate to booking with appointment data for editing
-    onNavigate('BOOKING' as Screen, appointment);
+    setSelectedAppointmentForEdit(appointment);
+    setIsEditModalOpen(true);
   };
 
   const filteredAppointments = appointments.filter(app => {
@@ -87,6 +98,8 @@ const AdminAgendaScreen: React.FC<AdminAgendaProps> = ({ onNavigate }) => {
   });
 
   const pendingCount = appointments.filter(a => a.status === 'PENDING').length;
+  // Use the global count for 'a definir' across all dates
+  const toDefineCount = allToDefineCount;
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr + 'T00:00:00');
@@ -149,6 +162,25 @@ const AdminAgendaScreen: React.FC<AdminAgendaProps> = ({ onNavigate }) => {
         </div>
       </header>
 
+      {/* Notification Banner for 'A Definir' Appointments */}
+      {!loading && toDefineCount > 0 && (
+        <div
+          onClick={openCalendar}
+          className="mx-4 mt-4 p-3 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-lg shadow-orange-200 cursor-pointer hover:shadow-xl transition-all animate-in slide-in-from-top duration-300"
+        >
+          <div className="flex items-center gap-3">
+            <div className="flex size-10 items-center justify-center rounded-full bg-white/20 animate-pulse">
+              <span className="material-symbols-outlined text-xl">schedule</span>
+            </div>
+            <div className="flex-1">
+              <p className="font-bold text-sm">⏰ {toDefineCount} agendamento{toDefineCount > 1 ? 's' : ''} aguardando horário</p>
+              <p className="text-[10px] opacity-90">Toque para ver e definir os horários</p>
+            </div>
+            <span className="material-symbols-outlined">chevron_right</span>
+          </div>
+        </div>
+      )}
+
       {/* Stats */}
       <section className="p-4 grid grid-cols-2 gap-4">
         <div className="flex flex-col gap-3 rounded-xl bg-white p-4 shadow-sm border border-slate-100">
@@ -163,16 +195,19 @@ const AdminAgendaScreen: React.FC<AdminAgendaProps> = ({ onNavigate }) => {
             <p className="text-[10px] text-slate-500">Agendamentos</p>
           </div>
         </div>
-        <div className="flex flex-col gap-3 rounded-xl bg-white p-4 shadow-sm border border-slate-100">
+        <div
+          onClick={() => toDefineCount > 0 && setFilter('PENDING')}
+          className={`flex flex-col gap-3 rounded-xl bg-white p-4 shadow-sm border transition-all ${toDefineCount > 0 ? 'border-orange-300 cursor-pointer hover:border-orange-400 hover:shadow-md' : 'border-slate-100'}`}
+        >
           <div className="flex items-center gap-2">
-            <div className="flex size-8 items-center justify-center rounded-full bg-orange-50 text-orange-600">
-              <span className="material-symbols-outlined text-[20px]">pending_actions</span>
+            <div className={`flex size-8 items-center justify-center rounded-full bg-orange-50 text-orange-600 ${toDefineCount > 0 ? 'animate-pulse' : ''}`}>
+              <span className="material-symbols-outlined text-[20px]">schedule</span>
             </div>
-            <p className="text-sm font-medium text-slate-600">Pendentes</p>
+            <p className="text-sm font-medium text-slate-600">A Definir</p>
           </div>
           <div>
-            <p className="text-2xl font-bold">{loading ? '...' : pendingCount}</p>
-            <p className="text-[10px] text-slate-500">Ações necessárias</p>
+            <p className="text-2xl font-bold text-orange-600">{loading ? '...' : toDefineCount}</p>
+            <p className="text-[10px] text-slate-500">Aguardando horário</p>
           </div>
         </div>
       </section>
@@ -242,7 +277,7 @@ const AdminAgendaScreen: React.FC<AdminAgendaProps> = ({ onNavigate }) => {
                       </div>
                       <div className="flex items-center gap-1 text-xs text-slate-500 mt-1">
                         <span>
-                          Cliente: {app.profile?.full_name || 'Não informado'}
+                          Cliente: {app.profile?.nickname || app.profile?.full_name || 'Não informado'}
                           {app.profile?.neighborhood && <span className="text-primary font-medium ml-1">({app.profile.neighborhood})</span>}
                         </span>
                         {app.profile?.phone && (
@@ -263,7 +298,7 @@ const AdminAgendaScreen: React.FC<AdminAgendaProps> = ({ onNavigate }) => {
                       </div>
                       <div className="mt-1 flex items-center gap-1 text-xs font-medium text-primary">
                         <span className="material-symbols-outlined text-[14px]">access_time</span>
-                        {app.scheduled_time.substring(0, 5)}
+                        {app.scheduled_time ? app.scheduled_time.substring(0, 5) : 'A definir'}
                       </div>
                     </div>
                   </div>
@@ -347,6 +382,17 @@ const AdminAgendaScreen: React.FC<AdminAgendaProps> = ({ onNavigate }) => {
       </button>
 
       {/* New Appointment Modal */}
+      {/* Edit Appointment Modal */}
+      <AdminEditBookingModal
+        isOpen={isEditModalOpen}
+        onClose={() => {
+          setIsEditModalOpen(false);
+          setSelectedAppointmentForEdit(null);
+        }}
+        onSuccess={loadAppointments}
+        appointment={selectedAppointmentForEdit}
+      />
+
       <AdminBookingModal
         isOpen={showBookingModal}
         initialDate={selectedDate}

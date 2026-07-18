@@ -1,10 +1,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { getPets, getServices, createAppointment, checkTimeConflict, Pet, Service } from '../lib/database';
+import { getPets, getServices, createAppointment, checkTimeConflict, Pet, Service, getAdminSetting, BusinessInfo } from '../lib/database';
 
 interface BookingProps {
-  service?: { id: string; name: string; description: string; price: number; duration: string; image_url: string; rating: number } | null;
+  service?: { id: string; name: string; price: number; description?: string | null; duration?: string | null; image?: string | null; image_url?: string | null; rating?: number | null } | null;
   onBack: () => void;
   onSuccess: () => void;
 }
@@ -18,11 +18,13 @@ const BookingScreen: React.FC<BookingProps> = ({ service: initialService, onBack
     initialService ? [{ serviceId: initialService.id, name: initialService.name, price: initialService.price, subtypeName: null }] : []
   );
   const [isServiceConfirmed, setIsServiceConfirmed] = useState(false);
-  const [selectedDate, setSelectedDate] = useState<string>('');
-  const [selectedTime, setSelectedTime] = useState('14:00');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [selectedExtras, setSelectedExtras] = useState<string[]>([]);
+  const [businessInfo, setBusinessInfo] = useState<BusinessInfo>({
+    whatsapp: '5511999999999',
+    email: 'suporte@alessandropet.com'
+  });
+
 
   // Horários de funcionamento: 07:00-12:00 e 13:00-19:00 (intervalo de almoço 12-13)
   const times = ['07:00', '08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00'];
@@ -44,20 +46,18 @@ const BookingScreen: React.FC<BookingProps> = ({ service: initialService, onBack
     if (!user) return;
     setLoading(true);
     try {
-      const [petsData, servicesData] = await Promise.all([
+      const [petsData, servicesData, businessData] = await Promise.all([
         getPets(user.id),
-        getServices()
+        getServices(),
+        getAdminSetting<BusinessInfo>('business_info')
       ]);
       setPets(petsData);
       setServices(servicesData);
+      if (businessData) setBusinessInfo(businessData);
       if (petsData.length > 0) setSelectedPetId(petsData[0].id);
       if (selectedServices.length === 0 && servicesData.length > 0) {
         setSelectedServices([{ serviceId: servicesData[0].id, name: servicesData[0].name, price: servicesData[0].price, subtypeName: null }]);
       }
-      // Set default date to tomorrow
-      const tomorrow = new Date();
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      setSelectedDate(tomorrow.toISOString().split('T')[0]);
     } catch (err) {
       console.error('Error loading data:', err);
     } finally {
@@ -66,50 +66,39 @@ const BookingScreen: React.FC<BookingProps> = ({ service: initialService, onBack
   };
 
   const handleConfirm = async () => {
-    if (!user || !selectedPetId || selectedServices.length === 0 || !selectedDate || !selectedTime) {
+    if (!user || !selectedPetId || selectedServices.length === 0) {
       alert('Por favor, preencha todos os campos');
-      return;
-    }
-
-    // Validar dia da semana
-    if (!isDateAllowed(selectedDate)) {
-      alert('⚠️ Data não permitida!\n\nFuncionamos apenas de Terça a Sábado.\nPor favor, selecione outra data.');
       return;
     }
 
     setSaving(true);
     try {
-      // Verificar conflito de horário
-      const { hasConflict } = await checkTimeConflict(selectedDate, selectedTime);
-
-      if (hasConflict) {
-        alert(
-          '⚠️ Horário indisponível!\n\n' +
-          `Já existe um agendamento para ${selectedDate} às ${selectedTime}.\n\n` +
-          'Por favor, escolha outro horário.'
-        );
-        setSaving(false);
-        return;
-      }
 
       let noteContent = `Serviços Selecionados:\n`;
       selectedServices.forEach(s => {
         noteContent += `- ${s.name}: R$ ${s.price.toFixed(2)}\n`;
       });
 
-      if (selectedExtras.length > 0) {
-        noteContent += `\nAdicionais (Extras): ${selectedExtras.join(', ')}\n`;
-      }
+
 
       await createAppointment({
         user_id: user.id,
         pet_id: selectedPetId,
         service_id: selectedServices[0].serviceId, // Usamos o primeiro como ID principal
-        scheduled_date: selectedDate,
-        scheduled_time: selectedTime,
+        scheduled_date: null,
+        scheduled_time: null,
         notes: noteContent.trim() || undefined
       });
       alert('Agendamento criado com sucesso!');
+
+      // Notificar administrador via WhatsApp
+      const selectedPet = pets.find(p => p.id === selectedPetId);
+      const petName = selectedPet?.name || 'Pet';
+      const whatsappNumber = businessInfo.whatsapp; // Dinâmico: Alessandro
+      const message = `Olá Alessandro! Acabei de solicitar um agendamento para o pet *${petName}*.\n\n*Serviços:*\n${noteContent.replace('Serviços Selecionados:\n', '')}\nPor favor, me confirme o melhor dia e horário!`;
+      const encodedMessage = encodeURIComponent(message);
+      window.open(`https://wa.me/${whatsappNumber}?text=${encodedMessage}`, '_blank');
+
       onSuccess();
     } catch (err) {
       console.error('Error creating appointment:', err);
@@ -122,17 +111,7 @@ const BookingScreen: React.FC<BookingProps> = ({ service: initialService, onBack
   const calculateTotal = () => {
     let total = selectedServices.reduce((sum, s) => sum + s.price, 0);
 
-    selectedExtras.forEach(extraName => {
-      // Procuramos o extra em todos os serviços selecionados
-      for (const selSvc of selectedServices) {
-        const fullSvc = services.find(s => s.id === selSvc.serviceId);
-        const extra = fullSvc?.extras?.find(e => e.name === extraName);
-        if (extra) {
-          total += extra.price;
-          break; // Extra adicionado uma vez
-        }
-      }
-    });
+
 
     return total;
   };
@@ -149,11 +128,7 @@ const BookingScreen: React.FC<BookingProps> = ({ service: initialService, onBack
     });
   };
 
-  const toggleExtra = (name: string) => {
-    setSelectedExtras(prev =>
-      prev.includes(name) ? prev.filter(e => e !== name) : [...prev, name]
-    );
-  };
+
 
   if (loading) {
     return (
@@ -213,7 +188,7 @@ const BookingScreen: React.FC<BookingProps> = ({ service: initialService, onBack
                 {svc.subtypes && svc.subtypes.length > 0 && (
                   <div className="mt-4 pt-4 border-t border-gray-50 dark:border-gray-700/50">
                     <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2.5">
-                      Variações e Subtipos:
+                      Adicionar serviços extras:
                     </p>
                     <div className="flex flex-col gap-2">
                       {svc.subtypes.map((st, idx) => {
@@ -265,7 +240,7 @@ const BookingScreen: React.FC<BookingProps> = ({ service: initialService, onBack
               className="w-full mt-4 bg-green-500 hover:bg-green-600 text-white font-bold py-3 rounded-xl shadow-lg shadow-green-200 flex items-center justify-center gap-2 animate-in fade-in slide-in-from-top-2"
             >
               <span className="material-symbols-outlined">check_circle</span>
-              Ok, escolher pet e data
+              Ok, confirmar pet
             </button>
           )}
 
@@ -282,38 +257,7 @@ const BookingScreen: React.FC<BookingProps> = ({ service: initialService, onBack
 
         <section className={`transition-all duration-300 ${!isServiceConfirmed ? 'opacity-30 pointer-events-none grayscale' : ''}`}>
 
-          {/* Extras Selection */}
-          {selectedServices.length > 0 && (
-            <section className={`mb-6 transition-all duration-300 ${!isServiceConfirmed ? 'opacity-30 pointer-events-none grayscale' : ''}`}>
-              <h2 className="text-lg font-bold mb-3 flex items-center gap-2">
-                <span className="material-symbols-outlined text-primary filled">add_circle</span>
-                Adicionais (Extras)
-              </h2>
-              <div className="grid grid-cols-1 gap-2">
-                {/* Mostramos extras de todos os serviços selecionados (evitando duplicados por nome) */}
-                {Array.from(new Set(
-                  selectedServices.flatMap(selSvc => {
-                    const fullSvc = services.find(s => s.id === selSvc.serviceId);
-                    return fullSvc?.extras || [];
-                  }).map(e => JSON.stringify(e))
-                )).map((eStr: any) => JSON.parse(eStr) as { name: string, price: number }).map((extra, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => toggleExtra(extra.name)}
-                    className={`flex items-center justify-between p-3 rounded-xl border transition-all ${selectedExtras.includes(extra.name) ? 'bg-blue-50 border-primary dark:bg-blue-900/20' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700'}`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <span className={`material-symbols-outlined ${selectedExtras.includes(extra.name) ? 'text-primary' : 'text-gray-300'}`}>
-                        {selectedExtras.includes(extra.name) ? 'check_box' : 'check_box_outline_blank'}
-                      </span>
-                      <span className="text-sm font-medium">{extra.name}</span>
-                    </div>
-                    <span className="text-xs font-bold text-primary">+ R$ {extra.price.toFixed(2)}</span>
-                  </button>
-                ))}
-              </div>
-            </section>
-          )}
+
 
           {/* Pet Selection */}
           <section className="mb-6">
@@ -341,53 +285,22 @@ const BookingScreen: React.FC<BookingProps> = ({ service: initialService, onBack
             )}
           </section>
 
-          {/* Date Selection */}
-          <section className="mb-6">
-            <h2 className="text-lg font-bold mb-3">Selecione a data</h2>
-            <input
-              type="date"
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              min={new Date().toISOString().split('T')[0]}
-              className={`w-full h-14 px-4 rounded-xl bg-white dark:bg-gray-800 border focus:ring-2 focus:ring-primary ${!isDateAllowed(selectedDate) && selectedDate ? 'border-red-400' : 'border-gray-200'}`}
-            />
-            {selectedDate && !isDateAllowed(selectedDate) && (
-              <p className="text-red-500 text-xs mt-2 flex items-center gap-1">
-                <span className="material-symbols-outlined text-sm">warning</span>
-                Funcionamos de Terça a Sábado. Selecione outro dia.
-              </p>
-            )}
-            <p className="text-gray-400 text-xs mt-2">Horário: Ter-Sáb, 07h-12h e 13h-19h</p>
-          </section>
-
-          {/* Time Selection */}
-          <section className="mb-4">
-            <h2 className="text-lg font-bold mb-3">Horários disponíveis</h2>
-            <div className="grid grid-cols-3 gap-3">
-              {times.map(time => (
-                <button
-                  key={time}
-                  onClick={() => setSelectedTime(time)}
-                  className={`py-3 rounded-xl font-semibold text-sm transition-all border ${selectedTime === time ? 'bg-primary text-white shadow-md shadow-primary/25 ring-2 ring-primary ring-offset-2' : 'bg-white dark:bg-gray-800 border-gray-200 text-gray-600 hover:border-primary hover:text-primary'}`}
-                >
-                  {time}
-                </button>
-              ))}
-            </div>
-          </section>
+          <p className="text-sm text-primary font-medium text-center mb-32 px-4 py-8 bg-blue-50/50 rounded-2xl border border-blue-100/50">
+            ⏰ Após solicitar, o Alessandro entrará em contato para definir o melhor dia e horário com você.
+          </p>
         </section>
       </main>
 
-      {isServiceConfirmed && selectedPetId && selectedDate && selectedTime && (
+      {isServiceConfirmed && selectedPetId && (
         <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white dark:bg-gray-900 border-t border-gray-200 p-4 pb-6 shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.1)] z-30 animate-in slide-in-from-bottom duration-300">
           <div className="flex items-center justify-between mb-4 px-1">
             <div className="flex flex-col">
-              <span className="text-[10px] text-gray-500 font-medium uppercase tracking-wide">Total a pagar</span>
+              <span className="text-[10px] text-gray-500 font-medium uppercase tracking-wide">Total estimado</span>
               <span className="text-xl font-bold">R$ {calculateTotal().toFixed(2)}</span>
             </div>
             <div className="text-right">
-              <span className="text-[10px] text-gray-500 block">Agendado para</span>
-              <span className="text-xs font-semibold text-primary">{selectedDate} às {selectedTime}</span>
+              <span className="text-[10px] text-gray-500 block">Agendamento</span>
+              <span className="text-xs font-semibold text-primary">A definir</span>
             </div>
           </div>
           <button
@@ -395,8 +308,8 @@ const BookingScreen: React.FC<BookingProps> = ({ service: initialService, onBack
             disabled={saving || pets.length === 0}
             className="w-full bg-primary hover:bg-primary-dark text-white font-bold text-lg py-4 rounded-xl shadow-lg shadow-primary/30 flex items-center justify-center gap-2 transition-transform active:scale-[0.98] disabled:opacity-70"
           >
-            {saving ? 'Criando...' : 'Confirmar Agendamento'}
-            <span className="material-symbols-outlined">arrow_forward</span>
+            {saving ? 'Solicitando...' : 'Solicitar Agendamento'}
+            <span className="material-symbols-outlined">send</span>
           </button>
         </div>
       )}

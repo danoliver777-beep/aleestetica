@@ -36,6 +36,15 @@ const AdminCalendarView: React.FC<AdminCalendarViewProps> = ({
         return appointments; // Show all to maintain history
     }, [appointments]);
 
+    // Separate appointments needing time definition
+    const toDefineAppointments = useMemo(() => {
+        return appointments.filter(app => !app.scheduled_time && app.status !== 'CANCELED' && app.status !== 'COMPLETED');
+    }, [appointments]);
+
+    const scheduledAppointments = useMemo(() => {
+        return appointments.filter(app => app.scheduled_time || app.status === 'CANCELED' || app.status === 'COMPLETED');
+    }, [appointments]);
+
     const navigate = (direction: 'PREV' | 'NEXT') => {
         const newDate = new Date(currentDate);
         newDate.setDate(newDate.getDate() + (direction === 'NEXT' ? 7 : -7));
@@ -99,7 +108,9 @@ const AdminCalendarView: React.FC<AdminCalendarViewProps> = ({
 
         const newTime = `${String(hour).padStart(2, '0')}:00`;
 
-        if (draggedAppointment.scheduled_date === date && draggedAppointment.scheduled_time.startsWith(`${String(hour).padStart(2, '0')}:`)) {
+        if (draggedAppointment.scheduled_date === date &&
+            draggedAppointment.scheduled_time &&
+            draggedAppointment.scheduled_time.startsWith(`${String(hour).padStart(2, '0')}:`)) {
             setDraggedAppointment(null);
             return;
         }
@@ -290,7 +301,83 @@ const AdminCalendarView: React.FC<AdminCalendarViewProps> = ({
                     </div>
 
                     <div className="flex-1 overflow-y-auto p-1.5 space-y-1.5">
-                        {filteredAppointments.length === 0 ? (
+                        {/* Section: Awaiting Time Definition */}
+                        {toDefineAppointments.length > 0 && (
+                            <div className="mb-3">
+                                <div className="flex items-center gap-1 mb-2 px-1">
+                                    <span className="material-symbols-outlined text-orange-500 text-sm animate-pulse">schedule</span>
+                                    <span className="text-[9px] font-bold uppercase text-orange-600 tracking-wider">Aguardando Horário ({toDefineAppointments.length})</span>
+                                </div>
+                                {toDefineAppointments.map(app => {
+                                    const isSelected = selectedAppIds.includes(app.id);
+                                    return (
+                                        <div
+                                            key={app.id}
+                                            draggable={!isUpdating && selectedAppIds.length === 0}
+                                            onDragStart={(e) => handleDragStart(e, app)}
+                                            onDragEnd={handleDragEnd}
+                                            className={`
+                                                p-2 rounded-lg bg-orange-50 dark:bg-orange-900/20 shadow-sm cursor-grab active:cursor-grabbing relative mb-1.5
+                                                transition-all duration-150 hover:shadow hover:scale-[1.01]
+                                                border-2 border-dashed border-orange-400
+                                                ${draggedAppointment?.id === app.id ? 'opacity-40 scale-95' : ''}
+                                                ${isUpdating ? 'pointer-events-none opacity-60' : ''}
+                                                ${isSelected ? 'ring-2 ring-primary ring-inset' : ''}
+                                            `}
+                                            onClick={() => handleEditAppointment(app)}
+                                        >
+                                            {/* Selection Checkbox */}
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleToggleSelection(app.id);
+                                                }}
+                                                className={`absolute top-2 right-2 size-4 rounded-full border flex items-center justify-center transition-colors ${isSelected ? 'bg-primary border-primary text-white' : 'border-orange-400 bg-white dark:bg-gray-800'}`}
+                                            >
+                                                {isSelected && <span className="material-symbols-outlined text-[10px] font-bold">check</span>}
+                                            </button>
+
+                                            <div className="flex items-center gap-1.5">
+                                                <div className="size-6 shrink-0 rounded bg-orange-200 dark:bg-orange-800 overflow-hidden flex items-center justify-center">
+                                                    {app.pet?.image_url ? (
+                                                        <div className="w-full h-full bg-cover bg-center" style={{ backgroundImage: `url("${app.pet.image_url}")` }}></div>
+                                                    ) : (
+                                                        <span className="material-symbols-outlined text-xs text-orange-600">pets</span>
+                                                    )}
+                                                </div>
+                                                <div className="flex-1 min-w-0 pr-4">
+                                                    <p className="font-bold text-[11px] truncate text-orange-800 dark:text-orange-200 leading-tight">
+                                                        {app.pet?.name || 'Pet'}
+                                                    </p>
+                                                    <p className="text-[9px] text-orange-600 dark:text-orange-400 truncate leading-tight">
+                                                        {app.profile?.nickname || app.profile?.full_name?.split(' ')[0]}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <div className="mt-1 flex items-center justify-between">
+                                                <span className="text-[9px] text-orange-500">
+                                                    {app.scheduled_date ? new Date(app.scheduled_date + 'T00:00:00').toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit' }) : 'A definir'}
+                                                </span>
+                                                <span className="text-[10px] font-bold text-orange-600 flex items-center gap-0.5 animate-pulse">
+                                                    <span className="material-symbols-outlined text-[10px]">schedule</span>
+                                                    Definir
+                                                </span>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+
+                        {/* Section: Scheduled Appointments */}
+                        {scheduledAppointments.length > 0 && toDefineAppointments.length > 0 && (
+                            <div className="flex items-center gap-1 mb-2 px-1 pt-2 border-t border-gray-200 dark:border-gray-700">
+                                <span className="material-symbols-outlined text-gray-400 text-sm">event_available</span>
+                                <span className="text-[9px] font-bold uppercase text-gray-500 tracking-wider">Com Horário ({scheduledAppointments.length})</span>
+                            </div>
+                        )}
+
+                        {scheduledAppointments.length === 0 && toDefineAppointments.length === 0 ? (
                             <div className="text-center py-6 text-gray-400">
                                 <span className="material-symbols-outlined text-2xl mb-1">event_busy</span>
                                 <p className="text-[10px]">Nenhum</p>
@@ -298,6 +385,8 @@ const AdminCalendarView: React.FC<AdminCalendarViewProps> = ({
                         ) : (
                             filteredAppointments.map(app => {
                                 const isSelected = selectedAppIds.includes(app.id);
+                                // Skip appointments that are in 'toDefine' section
+                                if (!app.scheduled_time && app.status !== 'CANCELED' && app.status !== 'COMPLETED') return null;
                                 return (
                                     <div
                                         key={app.id}
@@ -305,16 +394,16 @@ const AdminCalendarView: React.FC<AdminCalendarViewProps> = ({
                                         onDragStart={(e) => handleDragStart(e, app)}
                                         onDragEnd={handleDragEnd}
                                         className={`
-                                                    p-2 rounded-lg bg-white dark:bg-gray-700 shadow-sm border-l-3 cursor-grab active:cursor-grabbing relative
-                                                    transition-all duration-150 hover:shadow hover:scale-[1.01]
-                                                    ${app.status === 'CONFIRMED' ? 'border-green-500' :
+                                            p-2 rounded-lg bg-white dark:bg-gray-700 shadow-sm border-l-3 cursor-grab active:cursor-grabbing relative
+                                            transition-all duration-150 hover:shadow hover:scale-[1.01]
+                                            ${app.status === 'CONFIRMED' ? 'border-green-500' :
                                                 app.status === 'PENDING' ? 'border-orange-500' :
                                                     app.status === 'COMPLETED' ? 'border-blue-500' :
                                                         'border-gray-400 opacity-60'}
-                                                    ${draggedAppointment?.id === app.id ? 'opacity-40 scale-95' : ''}
-                                                    ${isUpdating ? 'pointer-events-none opacity-60' : ''}
-                                                    ${isSelected ? 'ring-2 ring-primary ring-inset bg-primary/5 dark:bg-primary/10' : ''}
-                                                `}
+                                            ${draggedAppointment?.id === app.id ? 'opacity-40 scale-95' : ''}
+                                            ${isUpdating ? 'pointer-events-none opacity-60' : ''}
+                                            ${isSelected ? 'ring-2 ring-primary ring-inset bg-primary/5 dark:bg-primary/10' : ''}
+                                        `}
                                         onClick={() => handleEditAppointment(app)}
                                     >
                                         {/* Selection Checkbox */}
@@ -341,16 +430,18 @@ const AdminCalendarView: React.FC<AdminCalendarViewProps> = ({
                                                     {app.pet?.name || 'Pet'}
                                                 </p>
                                                 <p className="text-[9px] text-gray-500 dark:text-gray-400 truncate leading-tight">
-                                                    {app.profile?.full_name?.split(' ')[0]}
+                                                    {app.profile?.nickname || app.profile?.full_name?.split(' ')[0]}
                                                     {app.profile?.neighborhood && <span className="text-primary ml-0.5">({app.profile.neighborhood})</span>}
                                                 </p>
                                             </div>
                                         </div>
                                         <div className="mt-1 flex items-center justify-between">
                                             <span className="text-[9px] text-gray-400">
-                                                {new Date(app.scheduled_date + 'T00:00:00').toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit' })}
+                                                {app.scheduled_date ? new Date(app.scheduled_date + 'T00:00:00').toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit' }) : 'A definir'}
                                             </span>
-                                            <span className="text-[10px] font-bold text-primary">{app.scheduled_time.substring(0, 5)}</span>
+                                            <span className="text-[10px] font-bold text-primary">
+                                                {app.scheduled_time ? app.scheduled_time.substring(0, 5) : 'A definir'}
+                                            </span>
                                         </div>
                                     </div>
                                 );
@@ -587,8 +678,8 @@ const WeekViewCompact: React.FC<WeekViewCompactProps> = ({
                                 })}
 
                                 {/* Positioned appointments */}
-                                {dayApps.map((app: AppointmentWithDetails) => {
-                                    const [h, m] = app.scheduled_time.split(':').map(Number);
+                                {dayApps.filter(app => app.scheduled_time).map((app: AppointmentWithDetails) => {
+                                    const [h, m] = app.scheduled_time!.split(':').map(Number);
                                     const startHour = 7;
                                     // Mobile: 48px per hour, Desktop: 56px
                                     const topMobile = ((h - startHour) * 48) + ((m / 60) * 48);

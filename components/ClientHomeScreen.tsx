@@ -4,7 +4,7 @@ import { Screen } from '../types';
 import BottomNav from './BottomNav';
 import Header from './Header';
 import { useAuth } from '../context/AuthContext';
-import { getPets, getServices, getProfile, getAppointments, getNotifications, markNotificationRead, Pet, Service, Profile, Notification as DBNotification } from '../lib/database';
+import { getPets, getServices, getProfile, getAppointments, getNotifications, markNotificationRead, getAdminSetting, Pet, Service, Profile, Notification as DBNotification, BusinessInfo } from '../lib/database';
 
 interface Notification {
   id: string;
@@ -29,6 +29,10 @@ const ClientHomeScreen: React.FC<ClientHomeProps> = ({ onNavigate, onSelectServi
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [expandedDescriptions, setExpandedDescriptions] = useState<Set<string>>(new Set());
+  const [businessInfo, setBusinessInfo] = useState<BusinessInfo>({
+    whatsapp: '5511999999999',
+    email: 'suporte@alessandropet.com'
+  });
 
   useEffect(() => {
     if (user) loadData();
@@ -38,16 +42,20 @@ const ClientHomeScreen: React.FC<ClientHomeProps> = ({ onNavigate, onSelectServi
     if (!user) return;
     setLoading(true);
     try {
-      const [profileData, petsData, servicesData, appointmentsData, dbNotificationsData] = await Promise.all([
+      const todayStr = new Date().toISOString().split('T')[0];
+      const [profileData, petsData, servicesData, appointmentsData, dbNotificationsData, businessData] = await Promise.all([
         getProfile(user.id),
         getPets(user.id),
         getServices(),
-        getAppointments(user.id),
-        getNotifications(user.id)
+        // Only fetch recent appointments for the home screen notifications/display
+        getAppointments(user.id), // We should probably add a limit/date filter here too if database.ts supported it for user view
+        getNotifications(user.id),
+        getAdminSetting<BusinessInfo>('business_info')
       ]);
       setProfile(profileData);
       setPets(petsData);
       setServices(servicesData);
+      if (businessData) setBusinessInfo(businessData);
 
       // Generate notifications from appointments
       const generatedNotifications: Notification[] = [];
@@ -118,6 +126,9 @@ const ClientHomeScreen: React.FC<ClientHomeProps> = ({ onNavigate, onSelectServi
     }
   };
 
+  // Memoize notifications to avoid UI flicker/process on every render
+  const memoizedNotifications = React.useMemo(() => notifications, [notifications]);
+
   const toggleDescription = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     setExpandedDescriptions(prev => {
@@ -171,9 +182,9 @@ const ClientHomeScreen: React.FC<ClientHomeProps> = ({ onNavigate, onSelectServi
               className="flex size-10 items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors relative"
             >
               <span className="material-symbols-outlined">notifications</span>
-              {notifications.filter(n => !n.read).length > 0 && (
+              {memoizedNotifications.filter(n => !n.read).length > 0 && (
                 <span className="absolute -top-1 -right-1 size-4 bg-red-500 rounded-full border-2 border-white dark:border-[#1A202C] flex items-center justify-center">
-                  <span className="text-[8px] font-bold text-white">{notifications.filter(n => !n.read).length > 9 ? '9+' : notifications.filter(n => !n.read).length}</span>
+                  <span className="text-[8px] font-bold text-white">{memoizedNotifications.filter(n => !n.read).length > 9 ? '9+' : memoizedNotifications.filter(n => !n.read).length}</span>
                 </span>
               )}
             </button>
@@ -316,7 +327,7 @@ const ClientHomeScreen: React.FC<ClientHomeProps> = ({ onNavigate, onSelectServi
 
       {/* WhatsApp FAB */}
       <a
-        href="https://wa.me/557998938044"
+        href={`https://wa.me/${businessInfo.whatsapp}`}
         target="_blank"
         rel="noopener noreferrer"
         className="fixed bottom-24 right-4 z-40 flex items-center justify-center w-14 h-14 bg-[#25D366] text-white rounded-full shadow-lg hover:bg-[#20bd5a] transition-all hover:scale-105 active:scale-95 animate-in zoom-in duration-300"
@@ -359,13 +370,13 @@ const ClientHomeScreen: React.FC<ClientHomeProps> = ({ onNavigate, onSelectServi
 
             {/* Notifications List */}
             <div className="overflow-y-auto max-h-[60vh] p-4 space-y-3">
-              {notifications.length === 0 ? (
+              {memoizedNotifications.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12 text-gray-400">
                   <span className="material-symbols-outlined text-5xl mb-2">notifications_off</span>
                   <p className="text-sm">Nenhuma notificação</p>
                 </div>
               ) : (
-                notifications.map((notification) => (
+                memoizedNotifications.map((notification) => (
                   <div
                     key={notification.id}
                     onClick={async () => {

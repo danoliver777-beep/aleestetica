@@ -17,6 +17,7 @@ const ProfileScreen: React.FC<ProfileProps> = ({ onNavigate }) => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [fullName, setFullName] = useState('');
+  const [nickname, setNickname] = useState('');
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
   const [neighborhood, setNeighborhood] = useState('');
@@ -41,6 +42,7 @@ const ProfileScreen: React.FC<ProfileProps> = ({ onNavigate }) => {
       if (profileData) {
         setProfile(profileData);
         setFullName(profileData.full_name || '');
+        setNickname(profileData.nickname || '');
         setPhone(profileData.phone || '');
         setAddress(profileData.address || '');
         setNeighborhood(profileData.neighborhood || '');
@@ -64,6 +66,7 @@ const ProfileScreen: React.FC<ProfileProps> = ({ onNavigate }) => {
       await upsertProfile({
         id: user.id,
         full_name: fullName,
+        nickname: nickname,
         phone: phone,
         address: address,
         neighborhood: neighborhood,
@@ -164,6 +167,67 @@ const ProfileScreen: React.FC<ProfileProps> = ({ onNavigate }) => {
           </div>
         </div>
 
+        <section className="mt-8 px-4 space-y-5">
+          <h3 className="text-lg font-bold flex items-center gap-2">
+            <span className="material-symbols-outlined text-primary filled">person</span>
+            Informações Pessoais
+          </h3>
+          <div className="space-y-4">
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-gray-500 ml-1">Nome e Sobrenome / Como quer ser chamado?</label>
+              <input
+                className="w-full bg-white dark:bg-surface-dark border border-gray-200 rounded-xl h-12 px-4 focus:ring-1 focus:ring-primary outline-none"
+                value={nickname}
+                onChange={(e) => setNickname(e.target.value)}
+                placeholder="Seu nome e sobrenome"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-gray-500 ml-1">Nome Completo</label>
+              <input
+                className="w-full bg-white dark:bg-surface-dark border border-gray-200 rounded-xl h-12 px-4 focus:ring-1 focus:ring-primary outline-none"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-gray-500 ml-1">E-mail</label>
+              <input
+                className="w-full bg-gray-100 dark:bg-gray-800 border border-gray-200 rounded-xl h-12 px-4 text-gray-500 cursor-not-allowed"
+                value={user?.email || ''}
+                disabled
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-gray-500 ml-1">Telefone / WhatsApp</label>
+              <input
+                className="w-full bg-white dark:bg-surface-dark border border-gray-200 rounded-xl h-12 px-4 focus:ring-1 focus:ring-primary outline-none"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="(11) 99999-9999"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-gray-500 ml-1">Endereço</label>
+              <input
+                className="w-full bg-white dark:bg-surface-dark border border-gray-200 rounded-xl h-12 px-4 focus:ring-1 focus:ring-primary outline-none"
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                placeholder="Rua, Número, Complemento"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-gray-500 ml-1">Bairro</label>
+              <input
+                className="w-full bg-white dark:bg-surface-dark border border-gray-200 rounded-xl h-12 px-4 focus:ring-1 focus:ring-primary outline-none"
+                value={neighborhood}
+                onChange={(e) => setNeighborhood(e.target.value)}
+                placeholder="Seu Bairro"
+              />
+            </div>
+          </div>
+        </section>
+
         <section className="mt-8 px-4">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-bold flex items-center gap-2">
@@ -223,58 +287,6 @@ const ProfileScreen: React.FC<ProfileProps> = ({ onNavigate }) => {
               ))}
             </div>
           )}
-        </section>
-
-        <section className="mt-8 px-4 space-y-5">
-          <h3 className="text-lg font-bold flex items-center gap-2">
-            <span className="material-symbols-outlined text-primary filled">person</span>
-            Informações Pessoais
-          </h3>
-          <div className="space-y-4">
-            <div className="space-y-1">
-              <label className="text-xs font-semibold text-gray-500 ml-1">Nome Completo</label>
-              <input
-                className="w-full bg-white dark:bg-surface-dark border border-gray-200 rounded-xl h-12 px-4 focus:ring-1 focus:ring-primary outline-none"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-              />
-            </div>
-            <div className="space-y-1">
-              <label className="text-xs font-semibold text-gray-500 ml-1">E-mail</label>
-              <input
-                className="w-full bg-gray-100 dark:bg-gray-800 border border-gray-200 rounded-xl h-12 px-4 text-gray-500 cursor-not-allowed"
-                value={user?.email || ''}
-                disabled
-              />
-            </div>
-            <div className="space-y-1">
-              <label className="text-xs font-semibold text-gray-500 ml-1">Telefone / WhatsApp</label>
-              <input
-                className="w-full bg-white dark:bg-surface-dark border border-gray-200 rounded-xl h-12 px-4 focus:ring-1 focus:ring-primary outline-none"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="(11) 99999-9999"
-              />
-            </div>
-            <div className="space-y-1">
-              <label className="text-xs font-semibold text-gray-500 ml-1">Endereço</label>
-              <input
-                className="w-full bg-white dark:bg-surface-dark border border-gray-200 rounded-xl h-12 px-4 focus:ring-1 focus:ring-primary outline-none"
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
-                placeholder="Rua, Número, Complemento"
-              />
-            </div>
-            <div className="space-y-1">
-              <label className="text-xs font-semibold text-gray-500 ml-1">Bairro</label>
-              <input
-                className="w-full bg-white dark:bg-surface-dark border border-gray-200 rounded-xl h-12 px-4 focus:ring-1 focus:ring-primary outline-none"
-                value={neighborhood}
-                onChange={(e) => setNeighborhood(e.target.value)}
-                placeholder="Seu Bairro"
-              />
-            </div>
-          </div>
         </section>
 
         <div className="mt-8 px-4 flex flex-col gap-4">
